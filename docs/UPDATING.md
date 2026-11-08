@@ -1,6 +1,6 @@
 # 更新与发布流程
 
-适用于私有仓库 `shui234/suishou-reply`。以下命令是维护模板，在源码根目录的 PowerShell 中执行；它们不会由阅读文档自动运行。将版本号改为本次计划发布的版本；如果仓库所属用户或组织变更，再调整 `$repoOwner`。
+适用于公开仓库 `shui234/suishou-reply`，项目代码采用 MIT 许可证。以下命令是维护模板，在源码根目录的 PowerShell 中执行；它们不会由阅读文档自动运行。将版本号改为本次计划发布的版本；如果仓库所属用户或组织变更，再调整 `$repoOwner`。需要已安装并登录 GitHub CLI；尚未登录时使用 `gh auth login --web` 完成浏览器授权，不在文档或命令中粘贴 Token。
 
 ```powershell
 $repoOwner = 'shui234'
@@ -80,7 +80,7 @@ git push -u origin "release/$releaseTag"
 gh pr create --repo $repoName --title "Prepare $releaseTag" --body-file .\work\release-notes.md
 ```
 
-不要强制推送，也不要为发布修改私有仓库的可见性。合并后切回主分支并拉取已审核的提交；以下示例假设主分支名为 `main`：
+不要强制推送，也不要在常规发版时修改仓库的可见性。合并后切回主分支并拉取已审核的提交；以下示例假设主分支名为 `main`：
 
 ```powershell
 git switch main
@@ -90,7 +90,7 @@ git status --short --branch
 
 ## 5. 创建草稿 Release，再发布
 
-确认登录的是预期 GitHub 账号、仓库仍为私有，再给已验证且已合并的提交打标签。若标签已经存在，检查其指向，不要覆盖或移动已发布标签。
+确认登录的是预期 GitHub 账号、仓库为预期的公开状态，再给已验证且已合并的提交打标签。公开内容必须先检查密钥与隐私信息。若标签已经存在，检查其指向，不要覆盖或移动已发布标签。
 
 ```powershell
 gh auth status
@@ -108,4 +108,4 @@ gh release edit $releaseTag --repo $repoName --draft=false
 gh release view $releaseTag --repo $repoName
 ```
 
-私有仓库的 Releases 仍受仓库访问权限控制。发布完成后检查 README 的版本链接和附件名称，记录最终 Release 地址。不要在仓库、Release、Issue 或命令输出中公开 GitHub 令牌或 DeepSeek API Key。
+公开仓库的 Release 附件应能在未登录时下载。发布完成后匿名下载附件并验证 SHA-256，检查 README 的版本链接和附件名称，记录最终 Release 地址。不要在仓库、Release、Issue 或命令输出中公开 GitHub 令牌或 DeepSeek API Key。

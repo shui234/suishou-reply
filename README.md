@@ -41,7 +41,7 @@
 
 运行版无需安装 Python，也无需管理员权限。当前构建为 Windows x64，在 Windows 11 x64 上完成验证。
 
-1. 打开 [v1.0.0 Releases 页面](https://github.com/shui234/suishou-reply/releases/tag/v1.0.0)，在 Assets 中下载 `SuishouReply-1.0.0-Windows.zip`。仓库为私有时，需要使用有访问权限的 GitHub 账号登录。
+1. 打开 [v1.0.0 Releases 页面](https://github.com/shui234/suishou-reply/releases/tag/v1.0.0)，在 Assets 中下载 `SuishouReply-1.0.0-Windows.zip`。源码与发布包公开提供，无需 GitHub 登录即可下载。
 2. 将 ZIP **完整解压**到一个目录，保留构建信息与许可文件。
 3. 双击解压后的 `SuishouReply\dist\SuishouReply.exe`，首次启动会打开设置。
 
@@ -107,7 +107,7 @@ Get-Content -LiteralPath .\SHA256SUMS.txt
 | 超时或网络错误 | 检查本机网络，在设置中重新测试连接 |
 | 保存设置失败 | 检查当前用户的 Windows 凭据管理器及本地配置目录是否可用 |
 | 找不到浮窗 | 展开 Windows 系统托盘隐藏图标，点击随手回 |
-| Releases 页面显示 404 | 私有仓库需登录有访问权限的 GitHub 账号；同时确认对应版本已发布 |
+| Releases 页面显示 404 | 检查仓库地址与版本号，或从仓库首页进入 Releases |
 
 错误界面不会直接显示服务端原始返回正文或密钥。
 
@@ -173,6 +173,8 @@ v1.0.0 已记录 **85 项自动化测试通过、退出码 0**，以及最终原
 - 评估 Windows 代码签名。
 
 ## 第三方组件与维护
+
+随手回的项目代码以 [MIT 许可证](LICENSE) 开源，欢迎使用、修改和贡献。第三方组件不因项目采用 MIT 而改变许可。
 
 本项目使用 Python、PySide6 / Qt、Shiboken 和 PyInstaller，各组件适用各自许可。Qt / PySide6 的 LGPL 说明、来源及替换构建方式见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)；分发构建结果时请一并保留对应源码、构建说明和许可文件。
 
