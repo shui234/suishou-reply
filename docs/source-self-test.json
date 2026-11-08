@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "mode": "native-qt-local-http-synthetic-data",
+  "checks": {
+    "default_paused": true,
+    "paused_sends_nothing": true,
+    "enable_does_not_upload_existing_clipboard": true,
+    "copy_request_reply": true,
+    "native_popup_does_not_steal_focus": true,
+    "original_clipboard_preserved": true,
+    "real_http_payload": true,
+    "visible_reply": true,
+    "screenshot_saved": true,
+    "reply_copy_and_no_loop": true,
+    "manual_regenerate": true,
+    "latest_copy_only": true,
+    "latest_text_in_request": true,
+    "api_error_displayed": true,
+    "no_automatic_retry": true,
+    "sensitive_clipboard_not_sent": true,
+    "pause_stops_requests": true,
+    "close_only_hides": true,
+    "tls_backend_available": true
+  },
+  "real_deepseek_account_tested": false
+}

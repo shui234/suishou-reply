@@ -1,0 +1,57 @@
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.egg-info/
+
+# Build outputs belong in GitHub Releases, never Git history
+/build/
+/dist/
+/work/
+*.spec
+*.exe
+*.dll
+*.pyd
+*.zip
+*.7z
+*.msi
+
+# Secrets and local preferences (keys belong in Windows Credential Manager)
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+credentials*.json
+secrets*.json
+settings.json
+settings.local.*
+config.local.*
+local_settings.*
+.credentials/
+
+# Logs, temporary files, crash dumps and local editor/OS state
+*.log
+*.tmp
+*.bak
+*.dmp
+*.pid
+logs/
+cache/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
