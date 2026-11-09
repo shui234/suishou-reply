@@ -7,7 +7,7 @@ from suishou.original import (STYLES, TOPICS, build_original_messages, choose_se
                               parse_post, weighted_length)
 
 
-BODY = '给代码助手开更多权限之前，先想清楚它出错时谁来收拾。能自动执行只是起点，能看懂改动、及时停下和撤回，才决定你敢不敢把下一步交给它。'
+BODY = 'AI 写得越快，人就越不能只看结果。🧩 真正容易被省掉的，是边界条件、失败路径和改动理由；这些东西不会因为代码跑通一次就自动补齐。把节省的打字时间分一点给审查，才有机会把生成速度变成可维护的代码，而不是下一轮返工的起点。'
 SOURCE = {'title': 'Official release notes', 'published_at': '2026-11-09T08:00:00Z',
           'url': 'https://example.com/releases/new', 'summary': 'The tool adds approval controls.',
           'provider': 'Official blog'}
@@ -70,7 +70,7 @@ def test_messages_separate_reference_data_and_only_send_original_history_fields(
     payload = json.loads(messages[1]['content'])
     assert payload['seed']['id'] == seed['id']
     assert payload['recent'][0]['body'] == recent[0]['body']
-    assert payload['source'] is None
+    assert payload['source']['kind'] == 'reference'
     assert 'Ignore rules' not in messages[0]['content']
     assert 'PRIVATE' not in json.dumps(messages)
 
@@ -97,7 +97,7 @@ def test_parse_uses_selected_metadata_and_supplied_source_not_model_claims():
 
 def test_json_fence_and_small_length_variation_are_accepted():
     seed = choose_seed('犀利', 'AI工具', [])
-    for size in (49, 111):
+    for size in (79, 111):
         body = '工具' * (size // 2) + ('。' if size % 2 else '')
         assert len(body) == size
         assert parse_post('```json\n' + json.dumps({'body': body}) + '\n```', seed)['body'] == body

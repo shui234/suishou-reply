@@ -400,7 +400,7 @@ class ReplyWindow(QWidget):
         self.pages.setCurrentWidget(self.original_page if selected == "original" else self.reply_page)
         self.page_scroll.verticalScrollBar().setValue(0)
         self.privacy_label.setText(
-            '原创内容与收藏保存在本机，可在历史中清理。生成时将灵感和近期原创发送给 DeepSeek；仅热点模式获取官方公开来源。'
+            '原创历史保存在本机，可随时清理。生成时将灵感、参考摘要和近期原创发送给 DeepSeek；热点联网取材，普通原创使用内置官方参考。'
             if selected == 'original' else PRIVACY_NOTICE)
         if changed:
             self.mode_changed.emit(selected)

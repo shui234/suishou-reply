@@ -215,15 +215,20 @@ class OriginalPage(QWidget):
         source_layout = QVBoxLayout(self.source_card)
         source_layout.setContentsMargins(14, 12, 14, 12)
         source_layout.setSpacing(7)
-        source_layout.addWidget(_label("事实来源 · 与上方评论分开", "caption"))
+        self.source_caption = _label("事实来源 · 与上方评论分开", "caption", wrap=True)
+        source_layout.addWidget(self.source_caption)
         self.source_title_label = _label("", "cardTitle", wrap=True)
         self.source_date_label = _label("", "caption", wrap=True)
         self.source_summary_label = _label("", "source", wrap=True)
+        self.source_url_label = _label("", "source", wrap=True)
+        self.source_url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.source_url_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.source_link_button = _button("打开原始来源 ↗", "quiet")
         self.source_link_button.clicked.connect(self._open_source)
         source_layout.addWidget(self.source_title_label)
         source_layout.addWidget(self.source_date_label)
         source_layout.addWidget(self.source_summary_label)
+        source_layout.addWidget(self.source_url_label)
         source_layout.addWidget(self.source_link_button, 0, Qt.AlignmentFlag.AlignLeft)
         cards.addWidget(self.source_card)
         cards.addStretch()
@@ -242,11 +247,12 @@ class OriginalPage(QWidget):
         actions = QHBoxLayout()
         actions.setSpacing(8)
         self.generate_button = _button("来一条", "primary")
-        self.copy_button = _button("复制内容")
+        self.copy_button = _button("复制全文")
+        self.copy_button.setToolTip("复制正文和链接，粘贴后即可自行发布")
         self.cancel_button = _button("取消", "quiet")
         self.generate_button.clicked.connect(lambda: self.generate_requested.emit(
             str(self.style_combo.currentData()), str(self.topic_combo.currentData())))
-        self.copy_button.clicked.connect(lambda: self.copy_requested.emit(False))
+        self.copy_button.clicked.connect(lambda: self.copy_requested.emit(True))
         self.cancel_button.clicked.connect(self.cancel_requested)
         actions.addWidget(self.generate_button, 1)
         actions.addWidget(self.copy_button, 1)
@@ -266,6 +272,9 @@ class OriginalPage(QWidget):
         secondary.addWidget(self.published_button)
         secondary.addStretch()
         secondary.addWidget(self.copy_source_button)
+        # Preserve the existing action for integrations; the main button now
+        # copies the complete post, so a second visible copy action is redundant.
+        self.copy_source_button.hide()
         layout.addLayout(secondary)
         self.show_idle()
 
@@ -280,10 +289,13 @@ class OriginalPage(QWidget):
         has_post = bool(self._post and str(self._post.get("body", "")).strip())
         for widget in (self.style_combo, self.topic_combo, self.generate_button, self.history_button):
             widget.setEnabled(not self._busy)
-        for button in (self.copy_button, self.favorite_button, self.published_button):
+        for button in (self.favorite_button, self.published_button):
             button.setEnabled(not self._busy and has_post)
+        can_copy = bool(has_post and self._url
+                        and _weighted_length(str(self._post.get("body", ""))) + 24 <= 280)
+        self.copy_button.setEnabled(not self._busy and can_copy)
         self.source_link_button.setEnabled(not self._busy and bool(self._url))
-        self.copy_source_button.setEnabled(not self._busy and has_post and bool(self._url))
+        self.copy_source_button.setEnabled(not self._busy and can_copy)
         self.cancel_button.setVisible(self._busy)
         self.cancel_button.setEnabled(self._busy)
         if self.history_dialog is not None:
@@ -297,7 +309,7 @@ class OriginalPage(QWidget):
         self.source_card.hide()
         self.length_label.clear()
         self.usage_label.clear()
-        self.copy_button.setText("复制内容")
+        self.copy_button.setText("复制全文")
         self._set_status(str(message))
         self.content_scroll.verticalScrollBar().setValue(0)
         self.set_busy(True)
@@ -309,7 +321,7 @@ class OriginalPage(QWidget):
         metadata = " · ".join(str(post[key]) for key in ("style", "topic") if post.get(key))
         self.post_caption.setText(metadata or "你的原创内容")
         self.generate_button.setText("换一条")
-        self.copy_button.setText("复制内容")
+        self.copy_button.setText("复制全文")
         for button, key, yes, no in ((self.favorite_button, "favorite", "已收藏", "收藏"),
                                      (self.published_button, "published", "已发布", "标记已发布")):
             with QSignalBlocker(button):
@@ -318,19 +330,37 @@ class OriginalPage(QWidget):
         source = post.get("source")
         source = source if isinstance(source, dict) else {}
         self._url = _source_url(source.get("url"))
+        is_reference = source.get("kind") == "reference"
+        self.source_caption.setText("延伸阅读 · 官方参考" if is_reference else "事实来源 · 与上方评论分开")
         self.source_title_label.setText(str(source.get("title", "")))
-        self.source_date_label.setText(" · ".join(str(source[key]) for key in ("provider", "published_at")
-                                                  if source.get(key)))
+        dates = [str(source["provider"])] if source.get("provider") else []
+        published_at = str(source.get("published_at") or "")
+        if is_reference:
+            dates.append(published_at or "参考文档 · 未标注发布日期")
+        elif published_at:
+            dates.append(published_at)
+        if source.get("verified_at"):
+            dates.append(f"核验于 {source['verified_at']}")
+        self.source_date_label.setText(" · ".join(dates))
         self.source_summary_label.setText(str(source.get("summary", "")))
+        self.source_url_label.setText(self._url)
+        self.source_link_button.setText("打开参考文档 ↗" if is_reference else "打开原始来源 ↗")
         self.source_link_button.setToolTip(self._url)
         self.source_card.setVisible(bool(source))
-        length = _weighted_length(body)
-        self.length_label.setText(f"{length} / 280 加权字符")
+        length = _weighted_length(body) + (24 if self._url else 0)
+        self.length_label.setText(f"{length} / 280 加权字符" + (" · 含链接" if self._url else ""))
         total = usage.get("total_tokens")
         if total is None and isinstance(usage.get("prompt_tokens"), int) and isinstance(usage.get("completion_tokens"), int):
             total = usage["prompt_tokens"] + usage["completion_tokens"]
         self.usage_label.setText(f"{total:,} tokens" if isinstance(total, int) and total >= 0 else "用量未返回")
-        self._set_status("已生成 · 复制后自行发布" if length <= 280 else "超过 280 字符，发布前请精简", "ready")
+        if not source:
+            self._set_status("旧版内容未附链接，请重新生成", "error")
+        elif not self._url:
+            self._set_status("来源链接不可用，请重新生成", "error")
+        elif length > 280:
+            self._set_status("正文加链接超过 280 加权字符，请重新生成", "error")
+        else:
+            self._set_status("已生成 · 复制全文后自行发布", "ready")
         self.content_scroll.verticalScrollBar().setValue(0)
         self.set_busy(False)
 
@@ -346,7 +376,7 @@ class OriginalPage(QWidget):
         self.source_card.hide()
         self.length_label.clear()
         self.usage_label.clear()
-        self.copy_button.setText("复制内容")
+        self.copy_button.setText("复制全文")
         self.favorite_button.setChecked(False)
         self.published_button.setChecked(False)
         self.favorite_button.setText("收藏")

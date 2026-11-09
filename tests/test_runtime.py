@@ -59,7 +59,7 @@ def test_original_mode_pauses_clipboard_and_mode_switch_cancels(qapp):
     ctl.generate('幽默', 'AI工具')
     QTest.qWait(500)
     assert ctl.current and runtime.window.original_page.isVisible() is False
-    before = ctl.current['body']
+    before = ctl.current['body'] + '\n' + ctl.current['source']['url']
     ctl.copy()
     assert qapp.clipboard().text() == before
     runtime.open_settings()

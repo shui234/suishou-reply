@@ -3,7 +3,7 @@ import random
 
 from PySide6.QtCore import QObject
 
-from .original import choose_seed, build_original_messages, parse_post, weighted_length, TOPICS
+from .original import choose_seed, build_original_messages, parse_post, reference_for_seed, format_post, TOPICS
 
 
 class OriginalController(QObject):
@@ -51,12 +51,13 @@ class OriginalController(QObject):
             return
         try:
             self.seed = choose_seed(style, topic, self.history.recent())
+            source = None if style == '热点' else reference_for_seed(self.seed)
         except (ValueError, OSError):
-            self.page.show_error('无法读取话题灵感，请检查程序文件是否完整。')
+            self.page.show_error('无法读取话题灵感或可靠参考链接，请检查程序文件是否完整。')
             return
         self.request_id += 1
         self.busy = True
-        self.current, self.source, self.usage = None, None, {}
+        self.current, self.source, self.usage = None, source, {}
         self.page.show_loading('正在查找近 14 天的官方来源…' if style == '热点' else '正在酝酿一条新观点…')
         if style == '热点':
             self.news.fetch(self.request_id, topic)
@@ -134,14 +135,13 @@ class OriginalController(QObject):
             self.current = None
             self.page.show_idle('已取消生成。调整风格或话题后，再来一条。')
 
-    def copy(self, with_source=False):
+    def copy(self, with_source=True):
         if self._closed or self.busy or not self.current:
             return
-        text = self.current['body']
-        if with_source and self.current.get('source'):
-            text += '\n' + self.current['source']['url']
-        if weighted_length(text) > 280:
-            self.page.show_error('内容超过普通 X 帖子的长度限制，请换一条。')
+        try:
+            text = format_post(self.current)
+        except ValueError as exc:
+            self.page.show_error(str(exc))
             return
         self.copy_text(text)
         self.page.show_copied()

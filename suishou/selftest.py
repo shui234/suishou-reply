@@ -22,7 +22,7 @@ from .original import STYLES, TOPICS, weighted_length
 TWEET = 'AI工具越来越多，真正省下时间的反而是少用几个。'
 TWEET_B = '很多产品都想替用户做决定，但我更希望它先把选择讲清楚。'
 REPLY = '工具再多也得先想清楚要做什么，不然只是把拖延换成了研究工具。'
-POST = '让 AI 写代码最省心的时刻，不是它一口气生成了多少行，而是你能看懂它为什么这么写。省下敲键盘的时间，可以留一点给检查边界。'
+POST = 'AI 写得越快，人就越不能只看结果。🧩 真正容易被省掉的，是边界条件、失败路径和改动理由；这些东西不会因为代码跑通一次就自动补齐。把节省的打字时间分一点给审查，才有机会把生成速度变成可维护的代码，而不是下一轮返工的起点。'
 
 
 def _wait(ms):
@@ -168,6 +168,7 @@ def run_self_test(app, screenshot: Path | None = None):
         check('original_single_request', len(calls) == count + 1)
         check('original_json_mode', calls[-1]['response_format'] == {'type': 'json_object'} and calls[-1]['max_tokens'] == 512)
         check('original_visible_and_length', page.post_label.text() == POST and weighted_length(POST) <= 280)
+        check('original_reference_attached', post_controller.current['source']['kind'] == 'reference')
         check('original_clipboard_unchanged', clipboard.text() == TWEET)
         if screenshot:
             check('original_screenshot_saved', window.grab().save(str(screenshot.with_name('preview-original.png'))))
@@ -175,8 +176,10 @@ def run_self_test(app, screenshot: Path | None = None):
         before = len(calls)
         page.copy_button.click()
         _wait(150)
-        check('original_copy_no_reply_loop', clipboard.text() == POST and len(calls) == before)
-        clipboard.setText(POST)
+        copied_post = POST + '\n' + post_controller.current['source']['url']
+        check('original_copy_no_reply_loop', clipboard.text() == copied_post and len(calls) == before)
+        check('original_default_copy_includes_link', weighted_length(copied_post) <= 280)
+        clipboard.setText(copied_post)
         _wait(150)
         check('original_history_restore_no_loop', len(calls) == before)
         controller.set_listening(False)

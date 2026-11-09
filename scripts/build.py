@@ -18,7 +18,7 @@ from make_icon import create_icon
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 
 def build_environment() -> dict[str, str]:
@@ -85,15 +85,15 @@ def collect_notices(destination: Path) -> None:
 def write_version_info(path: Path) -> None:
     # PyInstaller uses a Python expression for the Win32 version resource.
     path.write_text("""VSVersionInfo(
-  ffi=FixedFileInfo(filevers=(1, 1, 0, 0), prodvers=(1, 1, 0, 0),
+  ffi=FixedFileInfo(filevers=(1, 1, 1, 0), prodvers=(1, 1, 1, 0),
     mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),
   kids=[StringFileInfo([StringTable('080404B0', [
     StringStruct('FileDescription', '随手回 · X 互动与原创内容助手'),
-    StringStruct('FileVersion', '1.1.0'),
+    StringStruct('FileVersion', '1.1.1'),
     StringStruct('InternalName', 'SuishouReply'),
     StringStruct('OriginalFilename', 'SuishouReply.exe'),
     StringStruct('ProductName', '随手回'),
-    StringStruct('ProductVersion', '1.1.0')
+    StringStruct('ProductVersion', '1.1.1')
   ])]), VarFileInfo([VarStruct('Translation', [2052, 1200])])]
 )
 """, encoding="utf-8")

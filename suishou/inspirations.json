@@ -1,6 +1,15 @@
 [
   {
     "id": "tool-fit",
+    "source": {
+      "kind": "reference",
+      "title": "Building effective agents",
+      "provider": "Anthropic",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "summary": "Anthropic建议从满足任务的简单方案开始，只在效果需要时增加智能体复杂度，并权衡延迟与成本。",
+      "published_at": "参考文章 · 2024-12-19",
+      "verified_at": "2026-11-09"
+    },
     "theme": "工具选择",
     "angle": "先确定问题，再挑工具",
     "topics": [
@@ -16,6 +25,15 @@
   },
   {
     "id": "tool-pricing",
+    "source": {
+      "kind": "reference",
+      "title": "Pricing | OpenAI API",
+      "provider": "OpenAI",
+      "url": "https://developers.openai.com/api/docs/pricing",
+      "summary": "OpenAI的API价目表按模型、输入、输出及缓存等项目区分计费；估算费用需结合实际调用方式，具体价格以页面为准。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "免费额度与付费门槛",
     "angle": "价格之外还有验证和返工成本",
     "topics": [
@@ -31,6 +49,15 @@
   },
   {
     "id": "code-quality",
+    "source": {
+      "kind": "reference",
+      "title": "Application card: GitHub Copilot inline suggestions",
+      "provider": "GitHub",
+      "url": "https://docs.github.com/en/copilot/responsible-use/inline-suggestions",
+      "summary": "GitHub说明Copilot可能生成看似有效但不正确的代码，建议审查、测试，并检查其是否符合项目架构和需求。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "代码质量",
     "angle": "生成得快与维护得住是两回事",
     "topics": [
@@ -46,6 +73,15 @@
   },
   {
     "id": "agent-permissions",
+    "source": {
+      "kind": "reference",
+      "title": "Safety in building agents",
+      "provider": "OpenAI",
+      "url": "https://developers.openai.com/api/docs/guides/agent-builder-safety",
+      "summary": "OpenAI的Agent Builder安全文档建议让用户审阅并确认工具操作，约束不可信输入的数据流；防护措施仍不能消除所有错误。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "智能体权限",
     "angle": "能撤回的权限才让人敢放手",
     "topics": [
@@ -61,6 +97,15 @@
   },
   {
     "id": "opensource-deployment",
+    "source": {
+      "kind": "reference",
+      "title": "Use Compose in production",
+      "provider": "Docker",
+      "url": "https://docs.docker.com/compose/how-tos/production/",
+      "summary": "Docker说明生产部署可能需要调整环境变量、重启策略和日志服务；代码变更后还需重建镜像并重新创建容器。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "开源部署",
     "angle": "下载成功与跑得稳定之间还有距离",
     "topics": [
@@ -76,6 +121,15 @@
   },
   {
     "id": "readme-reality",
+    "source": {
+      "kind": "reference",
+      "title": "About the repository README file",
+      "provider": "GitHub",
+      "url": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes",
+      "summary": "GitHub说明README通常介绍项目用途、入门方法、求助途径和维护者，是了解项目的入口。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "文档与现实",
     "angle": "README展示起点，维护记录揭示成本",
     "topics": [
@@ -91,6 +145,15 @@
   },
   {
     "id": "benchmark-context",
+    "source": {
+      "kind": "reference",
+      "title": "Evaluation best practices",
+      "provider": "OpenAI",
+      "url": "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
+      "summary": "OpenAI区分行业榜单与应用自身的评测，建议测试贴近实际任务，并结合人工判断解读分数。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "基准测试",
     "angle": "榜单分数需要配上具体任务",
     "topics": [
@@ -106,6 +169,15 @@
   },
   {
     "id": "hallucination-check",
+    "source": {
+      "kind": "reference",
+      "title": "Reduce hallucinations",
+      "provider": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations",
+      "summary": "Anthropic说明模型仍可能生成错误事实，建议允许表达不确定、依据提供的材料作答，并逐项用来源核对主张。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "幻觉与验证",
     "angle": "表达越流畅，验证越不能省",
     "topics": [
@@ -122,6 +194,15 @@
   },
   {
     "id": "homogeneous-content",
+    "source": {
+      "kind": "reference",
+      "title": "Prompting best practices",
+      "provider": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "summary": "Anthropic建议提供具体背景，并让示例贴近用途且保持多样，避免模型学到示例中无意重复的模式。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "内容同质化",
     "angle": "写得更多以后，独立判断更显眼",
     "topics": [
@@ -137,6 +218,15 @@
   },
   {
     "id": "jobs-tasks",
+    "source": {
+      "kind": "reference",
+      "title": "Image generation",
+      "provider": "OpenAI",
+      "url": "https://developers.openai.com/api/docs/guides/image-generation",
+      "summary": "OpenAI图像文档分别介绍生成、修改已有图像和多轮编辑，也列出尺寸、质量等控制项；这些是创作流程中的具体任务。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "设计与创意工作变化",
     "angle": "职业由不同任务组成",
     "topics": [
@@ -152,6 +242,15 @@
   },
   {
     "id": "subscription-fatigue",
+    "source": {
+      "kind": "reference",
+      "title": "Canceling your ChatGPT subscription",
+      "provider": "OpenAI",
+      "url": "https://help.openai.com/en/articles/7232927-canceling-your-chatgpt-subscription",
+      "summary": "OpenAI帮助文档说明订阅需在购买渠道取消，卸载应用不会取消订阅；取消续费也不等于自动退还此前费用。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "订阅负担",
     "angle": "订阅越来越多，注意力没有同步增加",
     "topics": [
@@ -167,6 +266,15 @@
   },
   {
     "id": "automation-exceptions",
+    "source": {
+      "kind": "reference",
+      "title": "Building effective agents",
+      "provider": "Anthropic",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "summary": "Anthropic建议智能体依据执行反馈判断进度，在受阻时寻求人类反馈，并设置迭代上限等停止条件。",
+      "published_at": "参考文章 · 2024-12-19",
+      "verified_at": "2026-11-09"
+    },
     "theme": "自动化边界",
     "angle": "顺利路径之外，还有异常处理",
     "topics": [
@@ -182,6 +290,15 @@
   },
   {
     "id": "learning-cost",
+    "source": {
+      "kind": "reference",
+      "title": "About the repository README file",
+      "provider": "GitHub",
+      "url": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes",
+      "summary": "GitHub建议README保留入门和贡献所需的信息，将更长的说明放在其他文档中。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "学习成本",
     "angle": "省下操作步骤，也可能新增学习负担",
     "topics": [
@@ -197,6 +314,15 @@
   },
   {
     "id": "human-judgment",
+    "source": {
+      "kind": "reference",
+      "title": "Evaluation best practices",
+      "provider": "OpenAI",
+      "url": "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
+      "summary": "OpenAI建议先明确评测目标和成功标准，再选择指标，并用人的反馈校准自动评分。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "人的判断",
     "angle": "答案更便宜以后，选择问题更重要",
     "topics": [
@@ -212,6 +338,15 @@
   },
   {
     "id": "agent-handoff",
+    "source": {
+      "kind": "reference",
+      "title": "Building effective agents",
+      "provider": "Anthropic",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "summary": "Anthropic介绍由协调者拆解任务、分配给工作模型并汇总结果的模式；串联步骤也可设置检查点。",
+      "published_at": "参考文章 · 2024-12-19",
+      "verified_at": "2026-11-09"
+    },
     "theme": "智能体协作",
     "angle": "交接任务也需要交接上下文",
     "topics": [
@@ -227,6 +362,15 @@
   },
   {
     "id": "opensource-license",
+    "source": {
+      "kind": "reference",
+      "title": "Licensing a repository",
+      "provider": "GitHub",
+      "url": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository",
+      "summary": "GitHub说明许可证用于表达代码的使用、修改和分发条件，并建议在项目中包含许可证文件。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "开源使用",
     "angle": "能下载不代表适合所有使用场景",
     "topics": [
@@ -242,6 +386,15 @@
   },
   {
     "id": "model-migration",
+    "source": {
+      "kind": "reference",
+      "title": "Evaluation best practices",
+      "provider": "OpenAI",
+      "url": "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
+      "summary": "OpenAI建议运行和比较评测，在每次变更后持续评估，并把新发现的案例加入测试集。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "模型升级",
     "angle": "升级也要考虑既有流程",
     "topics": [
@@ -257,6 +410,15 @@
   },
   {
     "id": "testable-requests",
+    "source": {
+      "kind": "reference",
+      "title": "Prompting best practices",
+      "provider": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "summary": "Anthropic建议把期望输出、格式、约束和必要步骤说清楚，并提供任务背景，减少含糊指令。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "需求表达",
     "angle": "说清验收条件比堆提示词更有效",
     "topics": [
@@ -272,6 +434,15 @@
   },
   {
     "id": "small-workflows",
+    "source": {
+      "kind": "reference",
+      "title": "Building effective agents",
+      "provider": "Anthropic",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "summary": "Anthropic建议先从简单提示和评估开始，仅在简单方案不足时增加多步骤流程。",
+      "published_at": "参考文章 · 2024-12-19",
+      "verified_at": "2026-11-09"
+    },
     "theme": "工作流规模",
     "angle": "先跑通一个小环节，再考虑全面自动化",
     "topics": [
@@ -287,6 +458,15 @@
   },
   {
     "id": "project-signals",
+    "source": {
+      "kind": "reference",
+      "title": "About the repository README file",
+      "provider": "GitHub",
+      "url": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes",
+      "summary": "GitHub列出的README信息包含入门方式、求助入口及维护者；这些提供了进一步核查项目的线索。",
+      "published_at": "参考文档 · 未标注发布日期",
+      "verified_at": "2026-11-09"
+    },
     "theme": "开源项目判断",
     "angle": "热度之外还要看维护与可复现性",
     "topics": [

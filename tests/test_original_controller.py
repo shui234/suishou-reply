@@ -7,7 +7,7 @@ from suishou.original_controller import OriginalController
 from suishou.history import HistoryStore
 
 
-BODY = '让 AI 写代码最省心的时刻，不是它一口气生成了多少行，而是你能看懂它为什么这么写。省下敲键盘的时间，可以留一点给检查边界。'
+BODY = 'AI 写得越快，人就越不能只看结果。🧩 真正容易被省掉的，是边界条件、失败路径和改动理由；这些东西不会因为代码跑通一次就自动补齐。把节省的打字时间分一点给审查，才有机会把生成速度变成可维护的代码，而不是下一轮返工的起点。'
 
 
 class Client(QObject):
@@ -93,7 +93,7 @@ def test_generate_single_flight_persist_flags_and_copy(qapp, tmp_path):
     success(ctl, client)
     assert page.post['body'] == BODY and len(ctl.history.records) == 1
     ctl.copy(False)
-    assert copied == [BODY]
+    assert copied == [BODY + '\n' + ctl.current['source']['url']]
     ctl.toggle_favorite()
     ctl.toggle_published()
     saved = HistoryStore(tmp_path / 'original.json').records[0]
@@ -173,3 +173,22 @@ def test_all_style_topic_selections_dispatch_one_valid_post(qapp, tmp_path, styl
     assert page.post['style'] == (ctl.seed['style'] if style == '随机' else style)
     if topic != '随机':
         assert page.post['topic'] == topic
+
+
+def test_legacy_record_without_link_is_readable_but_not_copied(qapp, tmp_path):
+    ctl, _, _, page, copied = make(qapp, tmp_path)
+    saved = ctl.history.add({'body': BODY, 'style': '犀利', 'topic': 'AI工具', 'source': None},
+                            {'id': 'tool-fit', 'angle': 'old fixture'})
+    ctl.select_record(saved['id'])
+    assert page.post['body'] == BODY
+    ctl.copy()
+    assert not copied and '旧版' in page.error
+
+
+def test_missing_curated_reference_stops_before_paid_request(qapp, tmp_path, monkeypatch):
+    ctl, client, _, page, _ = make(qapp, tmp_path)
+    def unavailable(seed):
+        raise ValueError('missing bundled reference')
+    monkeypatch.setattr('suishou.original_controller.reference_for_seed', unavailable)
+    ctl.generate('幽默', 'AI工具')
+    assert not client.calls and '参考链接' in page.error and not ctl.busy

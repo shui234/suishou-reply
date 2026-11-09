@@ -151,7 +151,8 @@ def test_small_logical_work_area_keeps_global_controls_and_scrolls_to_actions(wi
     monkeypatch.setattr(window, "screen", lambda: SmallScreen())
     window.set_mode("original")
     window.original_page.show_post({"id": "small-screen", "body": "可复制的原创内容。",
-                                    "style": "犀利", "topic": "AI工具"}, {})
+                                    "style": "犀利", "topic": "AI工具",
+                                    "source": {"url": "https://docs.github.com/en/copilot", "title": "官方参考"}}, {})
     window.present()
     ui_app.processEvents()
     assert window.height() <= 576
