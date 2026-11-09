@@ -42,6 +42,21 @@ class DeepSeekClient(QObject):
 
     def generate(self, request_id: int, text: str, key: str, model: str,
                  style: str, previous: str = '') -> None:
+        if not text.strip():
+            self.cancel()
+            self.failed.emit(request_id, '请先粘贴一条推文。')
+            return
+        self._send(request_id, key, model, build_messages(text, style, previous), 256)
+
+    def generate_original(self, request_id: int, messages: list, key: str, model: str) -> None:
+        """Use the same authenticated, cancelable transport for structured posts."""
+        if not messages or not isinstance(messages, list):
+            self.cancel()
+            self.failed.emit(request_id, '缺少原创内容素材，请重新选择话题。')
+            return
+        self._send(request_id, key, model, messages, 512, json_output=True)
+
+    def _send(self, request_id, key, model, messages, max_tokens, *, json_output=False):
         self.cancel()
         if not key.strip() or any(c in key for c in '\r\n\x00') or not key.isascii():
             self.failed.emit(request_id, '请先在设置中填写有效的 API 密钥。')
@@ -49,11 +64,10 @@ class DeepSeekClient(QObject):
         if not valid_model(model):
             self.failed.emit(request_id, '模型名称格式无效，请在设置中检查。')
             return
-        if not text.strip():
-            self.failed.emit(request_id, '请先粘贴一条推文。')
-            return
-        payload = {'model': model, 'messages': build_messages(text, style, previous),
-                   'thinking': {'type': 'disabled'}, 'stream': False, 'max_tokens': 256}
+        payload = {'model': model, 'messages': messages,
+                   'thinking': {'type': 'disabled'}, 'stream': False, 'max_tokens': max_tokens}
+        if json_output:
+            payload['response_format'] = {'type': 'json_object'}
         request = QNetworkRequest(QUrl(ENDPOINT))
         request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, 'application/json')
         request.setRawHeader(QByteArray(b'Authorization'), QByteArray(b'Bearer ' + key.strip().encode('ascii')))

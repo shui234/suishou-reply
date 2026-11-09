@@ -197,3 +197,15 @@ def test_restoring_own_reply_cancels_intervening_request(qapp, keep_marker):
     assert ctl.request_id != old_id
     assert len(api.calls) == 2
     ctl.shutdown()
+def test_copy_original_text_does_not_trigger_reply_even_without_mime(qapp):
+    from suishou.runtime import AppRuntime
+    from PySide6.QtTest import QTest
+    runtime = AppRuntime(qapp, demo=True, tray_enabled=False)
+    runtime.controller.set_listening(True)
+    text = '工具订阅越多，取消订阅的判断就越重要。把省下的时间花在真正需要完成的事情上，比收集一排用不到的新功能更划算。'
+    runtime.controller.copy_generated_text(text)
+    assert qapp.clipboard().text() == text
+    qapp.clipboard().setText(text)
+    QTest.qWait(450)
+    assert not runtime.controller.current_reply and not runtime.controller.busy
+    runtime.cleanup()

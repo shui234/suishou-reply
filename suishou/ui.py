@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -137,6 +138,10 @@ def _stylesheet(theme: str) -> str:
         QLabel#subtitle {{ font-size: 10px; }}
         QLabel#caption {{ font-size: 11px; color: {p['dim']}; }}
         QLabel#reply {{ font-size: 16px; }}
+        QLabel#post {{ font-size: 16px; line-height: 1.6; }}
+        QLabel#cardTitle {{ font-size: 13px; font-weight: 600; }}
+        QFrame#contentCard, QFrame#sourceCard {{ background: {p['field']};
+                                              border: 1px solid {p['line']}; border-radius: 10px; }}
         QLabel#privacy {{ font-size: 10px; color: {p['muted']}; }}
         QLabel#status {{ color: {p['muted']}; font-size: 11px; }}
         QLabel#status[state='error'] {{ color: {p['error']}; }}
@@ -168,6 +173,14 @@ def _stylesheet(theme: str) -> str:
                             color: {p['muted']}; padding: 0 20px; }}
         QPushButton#style:checked {{ background: {p['field']}; color: {p['text']};
                                     font-weight: 600; }}
+        QPushButton#mode {{ min-height: 36px; color: {p['muted']}; }}
+        QPushButton#mode:checked {{ background: {p['field']}; color: {p['accent']};
+                                   border-color: {p['accent']}; font-weight: 600; }}
+        QPushButton#toggle:checked {{ color: {p['accent']}; border-color: {p['accent']}; }}
+        QListWidget {{ background: {p['field']}; border: 1px solid {p['line']};
+                       border-radius: 8px; padding: 5px; }}
+        QListWidget::item {{ padding: 10px 6px; border-bottom: 1px solid {p['line']}; }}
+        QListWidget::item:selected {{ background: {p['hover']}; color: {p['accent']}; }}
         QScrollArea, QScrollArea > QWidget > QWidget {{ background: transparent; border: 0; }}
         QScrollBar:vertical {{ width: 5px; background: transparent; margin: 0; }}
         QScrollBar::handle:vertical {{ background: {p['line']}; border-radius: 2px;
@@ -191,6 +204,7 @@ class ReplyWindow(QWidget):
     settings_requested = Signal()
     listening_requested = Signal(bool)
     style_changed = Signal(str)
+    mode_changed = Signal(str)
 
     def __init__(self) -> None:
         super().__init__(None, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint
@@ -206,10 +220,12 @@ class ReplyWindow(QWidget):
         self._has_source = False
         self._placed = False
         self._drag_offset: QPoint | None = None
+        self.mode = "reply"
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         surface = QWidget(self)
+        self._surface = surface
         surface.setObjectName("surface")
         outer.addWidget(surface)
         layout = QVBoxLayout(surface)
@@ -237,10 +253,32 @@ class ReplyWindow(QWidget):
         self.settings_button.setAccessibleName("打开设置")
         self.settings_button.clicked.connect(self.settings_requested)
         header.addWidget(self.settings_button)
+        self.hide_button = _button("×", "quiet")
+        self.hide_button.setFixedWidth(26)
+        self.hide_button.setAccessibleName("隐藏窗口")
+        self.hide_button.clicked.connect(self.close)
+        header.addWidget(self.hide_button)
         for widget in (self.header, icon, title, subtitle):
             widget.installEventFilter(self)
         layout.addWidget(self.header)
         layout.addSpacing(18)
+
+        mode_row = QHBoxLayout()
+        mode_row.setSpacing(8)
+        self._mode_group = QButtonGroup(self)
+        self._mode_group.setExclusive(True)
+        self.mode_buttons: dict[str, QPushButton] = {}
+        for mode, text in (("reply", "推文回复"), ("original", "来一条")):
+            button = _button(text, "mode")
+            button.setCheckable(True)
+            button.setAccessibleName(f"切换到{text}")
+            self._mode_group.addButton(button)
+            self.mode_buttons[mode] = button
+            button.clicked.connect(lambda checked=False, selected=mode: self.set_mode(selected))
+            mode_row.addWidget(button, 1)
+        self.mode_buttons["reply"].setChecked(True)
+        layout.addLayout(mode_row)
+        layout.addSpacing(14)
 
         listen_row = QHBoxLayout()
         listen_row.addWidget(_label("剪贴板监听", "muted"))
@@ -253,6 +291,13 @@ class ReplyWindow(QWidget):
         listen_row.addWidget(self.listen_button)
         layout.addLayout(listen_row)
         layout.addSpacing(16)
+
+        shell_layout = layout
+        self.pages = QStackedWidget()
+        self.reply_page = QWidget()
+        layout = QVBoxLayout(self.reply_page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         styles = QHBoxLayout()
         styles.setSpacing(3)
@@ -323,12 +368,42 @@ class ReplyWindow(QWidget):
         actions.addWidget(self.regenerate_button)
         actions.addWidget(self.close_button)
         layout.addLayout(actions)
+        self.pages.addWidget(self.reply_page)
+        from .original_ui import OriginalPage
+        self.original_page = OriginalPage()
+        self.pages.addWidget(self.original_page)
+        layout = shell_layout
+        # Keep global controls in view while the full page (including its actions)
+        # can scroll on high-DPI screens with a short logical work area.
+        self.page_scroll = QScrollArea()
+        self.page_scroll.setWidgetResizable(True)
+        self.page_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.page_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.page_scroll.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.page_scroll.setMinimumHeight(120)
+        self.page_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.page_scroll.setWidget(self.pages)
+        layout.addWidget(self.page_scroll)
         layout.addSpacing(15)
         privacy = _label(PRIVACY_NOTICE, "privacy", wrap=True)
+        self.privacy_label = privacy
         layout.addWidget(privacy)
         self.set_style("自然")
         self.set_theme("dark")
         self.show_idle()
+
+    def set_mode(self, mode: str) -> None:
+        selected = mode if mode in self.mode_buttons else "reply"
+        changed = selected != self.mode
+        self.mode = selected
+        self.mode_buttons[selected].setChecked(True)
+        self.pages.setCurrentWidget(self.original_page if selected == "original" else self.reply_page)
+        self.page_scroll.verticalScrollBar().setValue(0)
+        self.privacy_label.setText(
+            '原创内容与收藏保存在本机，可在历史中清理。生成时将灵感和近期原创发送给 DeepSeek；仅热点模式获取官方公开来源。'
+            if selected == 'original' else PRIVACY_NOTICE)
+        if changed:
+            self.mode_changed.emit(selected)
 
     def _set_status(self, text: str, state: str = "") -> None:
         self.status_label.setText(text)
@@ -350,7 +425,7 @@ class ReplyWindow(QWidget):
         self.setStyleSheet(_stylesheet(self._theme))
 
     def set_demo_mode(self, enabled: bool) -> None:
-        self.subtitle_label.setText("离线演示 · 不调用 API" if enabled else "一句好回复，刚刚好。")
+        self.subtitle_label.setText("离线演示 · 不调用 API" if enabled else "在 AI 的噪声里，找有用的信号。")
 
     def show_source(self, text: str) -> None:
         self._has_source = bool(text.strip())
@@ -407,7 +482,15 @@ class ReplyWindow(QWidget):
 
     def present(self) -> None:
         """Show in the work-area corner once, keeping the user's active app active."""
-        self.adjustSize()
+        screen = self.screen() or QApplication.primaryScreen()
+        self._surface.layout().activate()
+        preferred_height = (self._surface.sizeHint().height()
+                            - self.page_scroll.sizeHint().height() + self.pages.sizeHint().height())
+        if screen:
+            limit = max(1, screen.availableGeometry().height() - 24)
+            self.setMaximumHeight(limit)
+            preferred_height = min(preferred_height, limit)
+        self.resize(self.width(), preferred_height)
         if not self._placed:
             screen = self.screen() or QApplication.primaryScreen()
             if screen:

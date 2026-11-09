@@ -18,6 +18,7 @@ htmlcov/
 # Build outputs belong in GitHub Releases, never Git history
 /build/
 /dist/
+/dist-*/
 /work/
 *.spec
 *.exe
@@ -37,6 +38,8 @@ htmlcov/
 credentials*.json
 secrets*.json
 settings.json
+original-history.json
+.original-history-*
 settings.local.*
 config.local.*
 local_settings.*

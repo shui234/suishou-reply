@@ -197,3 +197,30 @@ def test_deadline_aborts_request_once_without_retry(qapp):
     assert len(failures) == 1 and failures[0][0] == 9
     assert '超时' in failures[0][1]
     assert len(manager.requests) == 1
+
+
+def test_original_uses_same_transport_with_json_and_bounded_tokens(client):
+    api, manager, successes, _ = client
+    messages = [{'role': 'system', 'content': '输出 json'},
+                {'role': 'user', 'content': '本地灵感素材'}]
+    api.generate_original(24, messages, 'synthetic-key', 'deepseek-flash')
+    request, raw = manager.requests[0]
+    payload = json.loads(raw)
+    assert request.url().toString() == 'https://api.deepseek.com/chat/completions'
+    assert payload['messages'] == messages
+    assert payload['response_format'] == {'type': 'json_object'}
+    assert payload['thinking'] == {'type': 'disabled'}
+    assert payload['max_tokens'] == 512
+    content = '{"body":"原创正文"}'
+    manager.replies[0].payload = success_payload(content)
+    manager.replies[0].finished.emit()
+    assert successes[0][:2] == (24, content)
+
+
+def test_original_cancels_prior_request_and_rejects_missing_messages(client):
+    api, manager, successes, failures = client
+    generate(api)
+    api.generate_original(2, [], 'synthetic-key', 'deepseek-flash')
+    assert manager.replies[0].aborted
+    assert len(manager.requests) == 1
+    assert not successes and failures[0][0] == 2

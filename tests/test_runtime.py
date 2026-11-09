@@ -44,3 +44,25 @@ def test_reopening_settings_does_not_reset_unsaved_fields(qapp):
     runtime.open_settings()
     assert runtime.settings_dialog.model_input.text() == 'another-model'
     runtime.cleanup()
+def test_original_mode_pauses_clipboard_and_mode_switch_cancels(qapp):
+    runtime = AppRuntime(qapp, demo=True, tray_enabled=False)
+    runtime.controller.set_listening(True)
+    runtime.window.set_mode('original')
+    assert not runtime.controller.listening
+    ctl = runtime.original_controller
+    ctl.generate('犀利', 'AI编程')
+    assert ctl.busy
+    runtime.window.set_mode('reply')
+    QTest.qWait(500)
+    assert not ctl.busy and ctl.current is None
+    runtime.window.set_mode('original')
+    ctl.generate('幽默', 'AI工具')
+    QTest.qWait(500)
+    assert ctl.current and runtime.window.original_page.isVisible() is False
+    before = ctl.current['body']
+    ctl.copy()
+    assert qapp.clipboard().text() == before
+    runtime.open_settings()
+    assert not ctl.busy
+    runtime.settings_dialog.reject()
+    runtime.cleanup()

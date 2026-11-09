@@ -18,7 +18,7 @@ from make_icon import create_icon
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 def build_environment() -> dict[str, str]:
@@ -85,15 +85,15 @@ def collect_notices(destination: Path) -> None:
 def write_version_info(path: Path) -> None:
     # PyInstaller uses a Python expression for the Win32 version resource.
     path.write_text("""VSVersionInfo(
-  ffi=FixedFileInfo(filevers=(1, 0, 0, 0), prodvers=(1, 0, 0, 0),
+  ffi=FixedFileInfo(filevers=(1, 1, 0, 0), prodvers=(1, 1, 0, 0),
     mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),
   kids=[StringFileInfo([StringTable('080404B0', [
-    StringStruct('FileDescription', '随手回 · 中文回复助手'),
-    StringStruct('FileVersion', '1.0.0'),
+    StringStruct('FileDescription', '随手回 · X 互动与原创内容助手'),
+    StringStruct('FileVersion', '1.1.0'),
     StringStruct('InternalName', 'SuishouReply'),
     StringStruct('OriginalFilename', 'SuishouReply.exe'),
     StringStruct('ProductName', '随手回'),
-    StringStruct('ProductVersion', '1.0.0')
+    StringStruct('ProductVersion', '1.1.0')
   ])]), VarFileInfo([VarStruct('Translation', [2052, 1200])])]
 )
 """, encoding="utf-8")
@@ -103,6 +103,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build SuishouReply for Windows x64")
     parser.add_argument("--onedir", action="store_true",
                         help="Keep libraries beside the executable for inspection/replacement")
+    parser.add_argument("--dist-dir", type=Path, default=ROOT / 'dist',
+                        help="Output folder; use a separate folder while an older EXE is running")
     args = parser.parse_args()
     if sys.platform != "win32" or struct.calcsize("P") != 8:
         parser.error("Use 64-bit Python on Windows to build the Windows executable.")
@@ -112,7 +114,7 @@ def main() -> int:
         parser.error(f"Application entry point is missing: {ROOT / 'main.py'}")
 
     build_dir = ROOT / "build"
-    dist_dir = ROOT / "dist"
+    dist_dir = args.dist_dir.resolve()
     build_dir.mkdir(exist_ok=True)
     dist_dir.mkdir(exist_ok=True)
     icon = create_icon()
@@ -131,6 +133,7 @@ def main() -> int:
         "--add-data", f"{icon};assets",
         "--add-data", f"{notices};licenses",
         "--add-data", f"{ROOT / 'THIRD_PARTY_NOTICES.md'};.",
+        "--add-data", f"{ROOT / 'suishou' / 'inspirations.json'};suishou",
         "--exclude-module", "tkinter", "--exclude-module", "PySide6.QtQml",
         "--exclude-module", "PySide6.QtQuick", "--exclude-module", "PySide6.QtWebEngineCore",
         str(ROOT / "main.py"),

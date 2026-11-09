@@ -5,7 +5,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtTest import QSignalSpy, QTest
 from PySide6.QtWidgets import QApplication, QDialog, QLineEdit
 
@@ -120,6 +120,64 @@ def test_demo_notice_survives_all_generation_states(window):
                    lambda: window.show_error("错误"), window.show_idle):
         update()
         assert window.subtitle_label.text() == "离线演示 · 不调用 API"
+
+
+def test_modes_keep_global_listening_visible_and_present_does_not_switch(window, ui_app):
+    changed = QSignalSpy(window.mode_changed)
+    window.mode_buttons["original"].click()
+    window.present()
+    ui_app.processEvents()
+    assert window.mode == "original"
+    assert window.original_page.isVisible()
+    assert window.listen_button.isVisible()
+    assert changed.at(0) == ["original"]
+    window.show_source("新复制的文本")
+    window.show_reply("回复", {})
+    window.present()
+    assert window.mode == "original"
+    window.set_mode("reply")
+    assert window.reply_label.text() == "回复"
+    assert window.reply_label.isVisible()
+    assert window.listen_button.isVisible()
+    assert window.width() <= 520
+    assert window.height() <= window.screen().availableGeometry().height()
+
+
+def test_small_logical_work_area_keeps_global_controls_and_scrolls_to_actions(window, ui_app, monkeypatch):
+    class SmallScreen:
+        def availableGeometry(self):
+            return QRect(0, 0, 1093, 600)
+
+    monkeypatch.setattr(window, "screen", lambda: SmallScreen())
+    window.set_mode("original")
+    window.original_page.show_post({"id": "small-screen", "body": "可复制的原创内容。",
+                                    "style": "犀利", "topic": "AI工具"}, {})
+    window.present()
+    ui_app.processEvents()
+    assert window.height() <= 576
+    assert window.width() == 440
+    for button in (window.listen_button, *window.mode_buttons.values()):
+        assert window.rect().contains(button.mapTo(window, QPoint(0, 0)))
+        assert window.rect().contains(button.mapTo(window, button.rect().bottomRight()))
+    copied = QSignalSpy(window.original_page.copy_requested)
+    actions = (window.original_page.generate_button, window.original_page.copy_button,
+               window.original_page.favorite_button, window.original_page.published_button)
+    for button in actions:
+        window.page_scroll.ensureWidgetVisible(button, 0, 0)
+        ui_app.processEvents()
+        viewport = window.page_scroll.viewport()
+        assert viewport.rect().contains(button.mapTo(viewport, QPoint(0, 0)))
+        assert viewport.rect().contains(button.mapTo(viewport, button.rect().bottomRight()))
+    window.original_page.copy_button.click()
+    assert copied.count() == 1
+    window.set_mode("reply")
+    window.present()
+    ui_app.processEvents()
+    assert window.height() <= 576
+    window.page_scroll.ensureWidgetVisible(window.copy_button, 0, 0)
+    ui_app.processEvents()
+    viewport = window.page_scroll.viewport()
+    assert viewport.rect().contains(window.copy_button.mapTo(viewport, window.copy_button.rect().bottomRight()))
 
 
 def test_settings_preserve_existing_secret_and_save_waits_for_controller(ui_app):

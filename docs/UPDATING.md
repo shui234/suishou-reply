@@ -5,7 +5,7 @@
 ```powershell
 $repoOwner = 'shui234'
 $repoName = "$repoOwner/suishou-reply"
-$releaseVersion = '1.0.1'
+$releaseVersion = '1.1.1'
 $releaseTag = "v$releaseVersion"
 ```
 
@@ -51,9 +51,9 @@ Get-FileHash -LiteralPath .\dist\SuishouReply.exe -Algorithm SHA256
 
 ## 3. 准备发布文件
 
-在工作区内准备独立的发布目录，沿用 v1.0.0 的结构：ZIP 最外层为 `SuishouReply/`，其中包含完整应用源码、启动与构建脚本、README、文档和许可文件；`dist/` 内包含 EXE、`BUILD_INFO.json`、`SHA256SUMS.txt`、`THIRD_PARTY_NOTICES.md` 和 `licenses/`。
+执行 `python scripts/package_release.py --dist-dir dist` 可生成 ZIP 与 SHA-256；旧版运行时可先 `python scripts/build.py --dist-dir dist-v1.1.1`，再使用相同目录打包。脚本不会自动推送或发布。发布包沿用 v1.0.0 的结构：ZIP 最外层为 `SuishouReply/`，其中包含完整应用源码、启动与构建脚本、README、文档和许可文件；`dist/` 内包含 EXE、`BUILD_INFO.json`、`SHA256SUMS.txt`、`THIRD_PARTY_NOTICES.md` 和 `licenses/`。
 
-EXE 在压缩包内的路径应为 `SuishouReply/dist/SuishouReply.exe`，与 README 的运行说明一致。ZIP 命名为 `SuishouReply-<版本>-Windows.zip`，例如 `SuishouReply-1.0.1-Windows.zip`。检查 ZIP 中没有 `.git`、`.venv`、工作缓存、个人配置、真实密钥、令牌或私人文本。
+EXE 在压缩包内的路径应为 `SuishouReply/dist/SuishouReply.exe`，与 README 的运行说明一致。ZIP 命名为 `SuishouReply-<版本>-Windows.zip`，例如 `SuishouReply-1.1.1-Windows.zip`。检查 ZIP 中没有 `.git`、`.venv`、工作缓存、个人配置、真实密钥、令牌或私人文本。
 
 在工作区内保存本次 `release-notes.md`，写明变化、运行方法、验证结果、未验证事项和代码签名状态。发布说明使用普通文本文件传给 `gh`，保留正常换行，不将密钥放入命令参数。
 

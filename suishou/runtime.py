@@ -1,5 +1,6 @@
 """Tray application wiring. Offline demo uses only synthetic local responses."""
 from dataclasses import replace
+import json
 import re
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtGui import QAction, QActionGroup
@@ -9,6 +10,9 @@ from .config import Settings, SettingsStore
 from .credentials import CredentialStore
 from .controller import ReplyController
 from .ui import ReplyWindow, SettingsDialog, create_icon
+from .history import HistoryStore, MemoryHistoryStore
+from .original_controller import OriginalController
+from .news import NewsClient
 
 
 class MemorySettingsStore:
@@ -53,6 +57,32 @@ class DemoClient(QObject):
     def cancel(self):
         self._revision += 1
 
+    def generate_original(self, request_id, messages, key, model):
+        self.cancel()
+        revision = self._revision
+        # Synthetic text is visibly marked as demo by the window; never a live API claim.
+        samples = (
+            '让 AI 写代码最省心的时刻，不是它一口气生成了多少行，而是你能看懂它为什么这么写。省下敲键盘的时间，可以留一点给检查边界。',
+            '工具订阅越多，取消订阅的判断就越重要。把省下的时间花在真正需要完成的事情上，比收集一排用不到的新功能更划算。',
+            '给 Agent 开权限像给新同事发钥匙：能进门就够了，没必要顺手把保险柜密码也交出去。自动化最该省的，可能是出事后解释谁批准的时间。',
+        )
+        body = samples[self._count % len(samples)]
+        self._count += 1
+        def complete():
+            if self._revision == revision:
+                self.succeeded.emit(request_id, json.dumps({'body': body, 'topic': 'AI编程',
+                    'style': '犀利', 'source': None}, ensure_ascii=False), {'total_tokens': 240})
+        QTimer.singleShot(420, self, complete)
+
+
+class DemoNews(QObject):
+    succeeded = Signal(int, list)
+    failed = Signal(int, str)
+    def fetch(self, request_id, topic='随机'):
+        self.failed.emit(request_id, '离线演示不获取新闻。正式模式将查找有日期与摘要的官方来源。')
+    def cancel(self):
+        pass
+
 
 class AppRuntime(QObject):
     def __init__(self, app, *, demo=False, tray_enabled=True, store=None, credentials=None):
@@ -69,6 +99,15 @@ class AppRuntime(QObject):
         self.test_client = DemoClient(self) if demo else DeepSeekClient(self)
         self.controller = ReplyController(clipboard=app.clipboard(), client=self.client,
             window=self.window, settings=self.settings, credentials=self.credentials, store=self.store, parent=self)
+        self.original_client = DemoClient(self) if demo else DeepSeekClient(self)
+        self.news = DemoNews(self) if demo else NewsClient(self)
+        self.history = MemoryHistoryStore() if demo else HistoryStore()
+        self.original_controller = OriginalController(client=self.original_client, news=self.news,
+            page=self.window.original_page, history=self.history, credentials=self.credentials,
+            settings=self.settings, copy_text=self.controller.copy_generated_text,
+            history_error=self.history.load_error, parent=self)
+        self.window.mode_changed.connect(self._mode_changed)
+        self.controller.listening_changed.connect(self._listening_mode)
         self.settings_dialog = SettingsDialog()
         self.settings_dialog.setWindowIcon(create_icon())
         self.settings_dialog.save_requested.connect(self.save_settings)
@@ -89,14 +128,15 @@ class AppRuntime(QObject):
         self.tray = QSystemTrayIcon(create_icon(), self)
         self.tray.setToolTip('随手回 · 监听已暂停' + (' · 离线演示' if self.demo else ''))
         self.menu = QMenu()
-        title = self.menu.addAction('随手回 · X 回复助手' + (' · 离线演示' if self.demo else ''))
+        title = self.menu.addAction('随手回 · X 互动与原创' + (' · 离线演示' if self.demo else ''))
         title.setEnabled(False)
         self.menu.addSeparator()
         self.toggle_action = self.menu.addAction('开启监听')
         self.toggle_action.setCheckable(True)
         self.toggle_action.triggered.connect(self.controller.set_listening)
         self.controller.listening_changed.connect(self._update_tray)
-        self.menu.addAction('显示回复窗口', self.window.present)
+        self.menu.addAction('推文回复', lambda: self.show_mode('reply'))
+        self.menu.addAction('来一条 · 原创短帖', lambda: self.show_mode('original'))
         style_menu = self.menu.addMenu('回复风格')
         group = QActionGroup(self)
         self.style_actions = {}
@@ -118,6 +158,21 @@ class AppRuntime(QObject):
     def _tray_activated(self, reason):
         if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.DoubleClick):
             self.window.present()
+
+    def show_mode(self, mode):
+        self.window.set_mode(mode)
+        self.window.present()
+
+    def _mode_changed(self, mode):
+        if mode == 'original':
+            self.controller.set_listening(False)
+        else:
+            self.original_controller.cancel()
+
+    def _listening_mode(self, enabled):
+        if enabled:
+            self.original_controller.cancel()
+            self.window.set_mode('reply')
 
     def _update_tray(self, enabled):
         if not self.tray:
@@ -150,6 +205,7 @@ class AppRuntime(QObject):
             self.open_settings()
 
     def open_settings(self):
+        self.original_controller.cancel()
         if self.settings_dialog.isVisible():
             self.settings_dialog.raise_()
             self.settings_dialog.activateWindow()
@@ -196,6 +252,7 @@ class AppRuntime(QObject):
             return
         self.settings = updated
         self.controller.settings = updated
+        self.original_controller.settings = updated
         self.window.set_theme(theme)
         self.window.set_style(style)
         self._sync_style_actions(style)
@@ -250,6 +307,7 @@ class AppRuntime(QObject):
             return
         self._cleaned = True
         self.controller.shutdown()
+        self.original_controller.shutdown()
         self.test_client.cancel()
         self.settings_dialog.key_input.clear()
         self.settings_dialog.hide()

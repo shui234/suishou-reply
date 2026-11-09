@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description='随手回 · 极简 X 回复助手')
+    parser = argparse.ArgumentParser(description='随手回 · X 互动与原创内容助手')
     parser.add_argument('--demo', action='store_true', help='离线演示，不保存密钥或访问网络')
     parser.add_argument('--self-test', action='store_true', help='运行离线剪贴板完整流程自检')
     parser.add_argument('--smoke-test', action='store_true', help='短暂运行离线界面后退出')
@@ -17,12 +17,15 @@ def main():
     from PySide6.QtCore import QTimer
     from PySide6.QtGui import QFont
     from PySide6.QtWidgets import QApplication, QMessageBox
-    from PySide6.QtNetwork import QLocalServer, QLocalSocket
+    from PySide6.QtNetwork import QLocalServer, QLocalSocket, QNetworkProxyFactory
     from .runtime import AppRuntime
     app = QApplication(sys.argv[:1])
     app.setApplicationName('SuishouReply')
     app.setApplicationDisplayName('随手回')
     app.setOrganizationName('SuishouReply')
+    from . import __version__
+    app.setApplicationVersion(__version__)
+    QNetworkProxyFactory.setUseSystemConfiguration(True)
     app.setQuitOnLastWindowClosed(False)
     app.setFont(QFont('Microsoft YaHei UI', 10))
 
@@ -69,6 +72,7 @@ def main():
     def safe_error(exc_type, exc_value, traceback):
         # Avoid tracebacks, HTTP bodies, or local variables leaking secrets into logs.
         runtime.controller.set_listening(False)
+        runtime.original_controller.cancel()
         runtime.window.show_error('发生意外错误，监听已暂停。请重启应用后重试。')
         runtime.window.present()
     sys.excepthook = safe_error

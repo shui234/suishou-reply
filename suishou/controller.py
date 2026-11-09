@@ -147,12 +147,18 @@ class ReplyController(QObject):
     def copy_reply(self):
         if not self.current_reply or self.busy:
             return
-        self._own.add(fingerprint(self.current_reply))
+        self.copy_generated_text(self.current_reply)
+        self.window.show_copied()
+
+    def copy_generated_text(self, text):
+        """Register both writing modes, including later clipboard-history restores."""
+        if self._closed or not text:
+            return
+        self._own.add(fingerprint(text))
         mime = QMimeData()
-        mime.setText(self.current_reply)
+        mime.setText(text)
         mime.setData(OWN_MIME, b'1')
         self.clipboard.setMimeData(mime)
-        self.window.show_copied()
 
     def set_style(self, style):
         if style not in ('自然', '犀利', '幽默'):
