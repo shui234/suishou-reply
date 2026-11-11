@@ -2,19 +2,21 @@
 
 在你主动打开的 X 帖子详情页，识别当前原帖、生成中文回复，在页面旁审阅和编辑。开启「自动生成自然回复」后，新帖不需要再点生成。
 
-V1.2 是现有随手回的扩展，继续复用 Python 的 DeepSeek 请求、三种回复提示词、模型设置和 Windows 凭据管理器。原 Windows 桌面程序、剪贴板、原创内容、来源面板和历史管理保持原样。没有接入 Wingman-X，也没有新增账号或云数据库。
+V1.2 是现有随手回的扩展，继续复用 Python 的 DeepSeek 请求、三种回复提示词、模型设置和 Windows 凭据管理器。它不替换已有 Windows 桌面程序及其数据。仓库同时包含 v1.1.1 桌面源码，公开的完整桌面 EXE 仍为 v1.0.0；本扩展包中的 EXE 是独立本机通信组件。没有接入 Wingman-X，也没有新增账号或云数据库。
 
-**本版实际流程：打开帖子 → 自动生成自然回复 → 审阅／编辑 → 复制或“手动填充” → 你在 X 回复框粘贴并发送。** “手动填充”会复制草稿并提示 Ctrl+V，不由脚本写入网页输入框。X 官方规则没有明确授权此类 DOM 写入，按需求采用人工替代；详见 [平台规则与技术边界](EDGE_PLATFORM_RULES.md)。本项目没有获得 X 官方授权或兼容性认证。
+**同时开启两个开关后的流程：打开帖子 → 自动生成自然回复并复制 → 审阅 → 你在 X 回复框 Ctrl+V 粘贴并发送。** 「自动生成自然回复」和「生成后自动复制」都默认关闭；编辑草稿后需再点「复制草稿」。界面中的“手动填充”只复制并显示粘贴指引，不由脚本写入网页输入框；详见 [平台规则与技术边界](EDGE_PLATFORM_RULES.md)。本项目没有获得 X 官方授权或兼容性认证。
+
+[下载 v1.2.1 ZIP](https://github.com/shui234/suishou-reply/releases/download/v1.2.1/SuishouReply-1.2.1-Edge-Windows.zip) · [GitHub Release 与校验文件](https://github.com/shui234/suishou-reply/releases/tag/v1.2.1)
 
 ## 安装
 
 适用环境：Windows 11 x64 + Microsoft Edge。运行包不需要安装 Python，源码构建需要 Python。
 
-1. 将 `SuishouReply-1.2.1-Edge-Windows.zip` **完整解压**到准备长期保存的本地目录。
+1. 下载上方 `SuishouReply-1.2.1-Edge-Windows.zip`，**完整解压**到准备长期保存的本地目录；不要直接在压缩包内运行。
 2. 双击解压目录内的 **Install.cmd**。它只为当前 Windows 用户注册本机通信组件，不需要管理员权限。不要直接双击 `SuishouReplyBridge.exe`，它是由 Edge 启动的后台通信程序。
 3. 在 Edge 地址栏打开 `edge://extensions`，开启「开发人员模式」，点击「加载解压缩的扩展」，选择包内的 **extension** 文件夹，即包含 `manifest.json` 的那一层。
 4. 核对扩展 ID：`pibjjmjbipbifeddoahjagcinihkcgnf`。若不同，不要扩大本机白名单；请重新使用完整、未改动的扩展文件夹。
-5. 在原随手回桌面版的设置中保存 DeepSeek API Key。之前已保存过就直接复用，不需要重新输入；扩展没有密钥输入框。桌面应用无需常驻，Edge 会按需启动本机组件。
+5. 在原随手回桌面版的设置中保存 DeepSeek API Key。之前已保存过就直接复用；首次使用可下载保留的 [v1.0.0 桌面版](https://github.com/shui234/suishou-reply/releases/tag/v1.0.0) 配置。扩展没有密钥输入框，桌面应用无需常驻，Edge 会按需启动本机组件。
 6. 由你自行在 Edge 登录 X，再打开一条帖子的独立详情页。已打开的页面首次安装后请刷新一次。
 
 使用扩展时建议暂停桌面版剪贴板监听。旧桌面版无法识别浏览器复制的草稿来自扩展，若仍开着监听，可能把该草稿当作新复制文本再请求一次；本版没有远程切换旧 EXE 的监听状态。
@@ -24,6 +26,16 @@ V1.2 是现有随手回的扩展，继续复用 Python 的 DeepSeek 请求、三
 安装器会在当前目录生成 `native-host.json` 和 `native-registration-backup.json`，分别记录本机路径与原注册值。它们不是公共发行文件，不要上传到 GitHub。
 
 参考：[Microsoft 官方加载本地扩展说明](https://learn.microsoft.com/en-us/microsoft-edge/extensions/getting-started/extension-sideloading)。本扩展未上架 Edge Add-ons 商店，当前通过开发人员模式加载。
+
+## 从已有 v1.2.0 升级
+
+已经加载旧版扩展时，只刷新 X 页面不会升级扩展文件。先关闭已开启的自动开关并暂停桌面监听，再选择以下一种方式。
+
+**保留原扩展路径，只更新浏览器功能：** 先备份原安装目录中的 `extension` 文件夹，再把新 ZIP 内 `extension` 文件夹的运行文件复制到原来已加载的 `extension` 文件夹，覆盖同名文件。在 `edge://extensions` 找到「随手回」，点击「重新加载」，确认版本显示 **1.2.1**，最后刷新已打开的 X 页面。这会保留原加载路径和扩展 ID；不移动或覆盖本机生成的注册文件。v1.2.1 的自动复制仍使用原通信协议，此方式继续运行已注册的旧桥接 EXE。
+
+**同时升级桥接 EXE：** 将完整新包解压到新的长期目录；关闭 X 标签，在旧安装目录运行 `Uninstall.cmd`，再在新目录运行 `Install.cmd`。在 Edge 移除旧路径加载的扩展，重新加载新包的 `extension` 文件夹，然后刷新 X 页面。旧安装目录可保留作回退；原桌面 EXE、凭据与历史无需删除。移除再加载可能重置浏览器开关，使用前请重新确认。
+
+看到页面面板或工具栏弹窗中的「生成后自动复制」后，再按需开启；默认不会替你打开。
 
 ## 使用
 
@@ -120,7 +132,7 @@ python scripts/package_edge.py
 
 测试脚本需要 Node.js 22 或更高版本，不安装 npm 运行依赖。已验证环境为 Python 3.14.4、Node.js 24.14.1、PySide6 6.12.0、PyInstaller 6.22.3。`browser-smoke.cjs` 使用独立 Edge 配置、拦截的本地合成网页与 EXE 的显式模拟模式，不访问真实 X 页面或付费模型。
 
-单独发行包的 source 子集可重建 Edge 组件并运行其专项测试，不能替代完整桌面项目；具体步骤见 `source/README-REBUILD.md`。本次源码只在本地开发，没有推送 GitHub 或创建新 Release。
+单独发行包的 source 子集可重建 Edge 组件并运行其专项测试，不能替代完整桌面项目；具体步骤见 `source/README-REBUILD.md`。完整源码在 [GitHub 仓库](https://github.com/shui234/suishou-reply)，对应安装包见 [v1.2.1 Release](https://github.com/shui234/suishou-reply/releases/tag/v1.2.1)。
 
 ## 卸载、回退与故障
 

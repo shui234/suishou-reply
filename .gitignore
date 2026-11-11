@@ -44,6 +44,8 @@ settings.local.*
 config.local.*
 local_settings.*
 .credentials/
+native-host.json
+native-registration-backup.json
 
 # Logs, temporary files, crash dumps and local editor/OS state
 *.log

@@ -44,6 +44,10 @@ async function main(){
  const workerInfo=await until(async()=>{const t=await client.call('Target.getTargets');return t.targetInfos.find(t=>t.type==='service_worker'&&t.url===`chrome-extension://${ID}/src/background.js`)},'loaded MV3 worker');
  const {sessionId:worker}=await client.call('Target.attachToTarget',{targetId:workerInfo.targetId,flatten:true});
  await client.call('Runtime.enable',{},worker);
+ // A discoverable worker target may still be loading its script/imports.
+ // Wait for initialization instead of racing its first evaluation.
+ await until(()=>client.evaluate('typeof bridge === "object" && !!bridge.d',worker),'initialized MV3 worker');
+ await client.evaluate('bridge.ready.then(()=>true)',worker);
  checks.mv3_loaded_with_fixed_id=true;
  // Focus is emulated only in this isolated headless test, not claimed as Windows UI acceptance.
  await client.evaluate('bridge.d.getWindow=async()=>({focused:true});',worker);

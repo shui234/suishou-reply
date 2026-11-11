@@ -3,9 +3,10 @@
   "timezone": "Asia/Shanghai",
   "version": "1.2.1",
   "python": {
-    "tests": 360,
+    "tests": 302,
     "failures": 0,
-    "errors": 0
+    "errors": 0,
+    "scope": "clean committed GitHub source"
   },
   "node": {
     "tests": 98,
@@ -66,7 +67,16 @@
   "real_system_clipboard_tested": false,
   "user_edge_installation_verified": false,
   "paid_api_calls": 0,
-  "bridge_sha256": "9c810ba375cac76b3554cb3afffcd7f2a4bcc69ec1f4ec3fe97045bca9c708e4",
-  "bridge_bytes": 26733882,
-  "prior_v120_preserved": true
+  "bridge_sha256": "82bf2fab1722a17a894e6e2431c60025224a94d4dc6214508e1223be0c3c6367",
+  "bridge_bytes": 26733630,
+  "prior_v120_preserved": true,
+  "previous_full_working_tree_python": {
+    "tests": 360,
+    "includes_uncommitted_desktop_tests": true
+  },
+  "build_source": {
+    "runtime_commit": "c07eab70101013e791b3524b1b0292583b5b1ad9",
+    "clean_checkout": true,
+    "uncommitted_desktop_changes_included": false
+  }
 }

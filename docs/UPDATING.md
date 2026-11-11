@@ -2,6 +2,51 @@
 
 适用于公开仓库 `shui234/suishou-reply`，项目代码采用 MIT 许可证。以下命令是维护模板，在源码根目录的 PowerShell 中执行；它们不会由阅读文档自动运行。将版本号改为本次计划发布的版本；如果仓库所属用户或组织变更，再调整 `$repoOwner`。需要已安装并登录 GitHub CLI；尚未登录时使用 `gh auth login --web` 完成浏览器授权，不在文档或命令中粘贴 Token。
 
+## Edge 扩展发版
+
+[v1.2.1 Release](https://github.com/shui234/suishou-reply/releases/tag/v1.2.1) 的运行包为 [SuishouReply-1.2.1-Edge-Windows.zip](https://github.com/shui234/suishou-reply/releases/download/v1.2.1/SuishouReply-1.2.1-Edge-Windows.zip)，包含 MV3 扩展、独立桥接 EXE、安装器、文档与对应源码子集。它不替换仍可下载的 [v1.0.0 桌面 Release](https://github.com/shui234/suishou-reply/releases/tag/v1.0.0)，也不表示 v1.1.1 完整桌面 EXE 已公开发布。
+
+Edge 与完整桌面程序独立构建、分别命名。更新 Edge 时同步 `extension/manifest.json`、`extension/package.json`、面板版本标记、`suishou/edge_protocol.py` 的应用版本、`scripts/build_edge.py` 的版本与 Windows 版本资源，以及相关测试、文档和发布说明。Native 消息中的协议字段 `v` 不随补丁版本自动升级。
+
+发布构建应来自选定的、已提交的完整源码。若日常工作区还有其他未提交功能，使用独立工作树从目标提交构建；不要复制脏工作区中的复用模块，也不要重置、清理或覆盖那些未提交文件。发行 ZIP 内 `source` 中的复用模块须与发布标签一致。
+
+在干净发布工作树中，安装开发依赖后执行：
+
+```powershell
+python -m pytest -q
+node --test extension/tests/*.test.js
+python scripts/build_edge.py
+node extension/tests/browser-smoke.cjs
+python scripts/package_edge.py
+```
+
+`build_edge.py` 为 v1.2.1 写入独立的 `dist-edge-v1.2.1`，不覆盖桌面产物；`package_edge.py` 在项目上一级生成 Edge ZIP 和 SHA-256 文件。升级其他版本时应同步脚本及测试中的输出目录。检查运行文件与当前源码哈希一致、ZIP CRC 正常，并排除密钥、用户配置、原创历史、注册文件、注册备份、日志和缓存。依赖来源及许可文件保留在包内，EXE/ZIP 不提交进 Git。
+
+Node 测试和 Edge 合成页面检查不产生付费 API 调用。合成网页、模拟模型、仿真焦点及捕获的剪贴板调用必须如实标注；不能将其写成真实 X 登录或系统剪贴板已经验收。发布说明记录实际发布提交的测试数量，不沿用包含未提交桌面功能的工作区测试总数。
+
+源代码按仓库现有流程提交并推送后，检查标签不存在或已指向预期提交，再创建草稿 Release。下例版本仅用于展示本次命名；发布后不得移动或覆盖已有标签与同名附件：
+
+```powershell
+$repoName = 'shui234/suishou-reply'
+$edgeVersion = '1.2.1'
+$edgeTag = "v$edgeVersion"
+$edgeAsset = "..\SuishouReply-$edgeVersion-Edge-Windows.zip"
+$edgeChecksum = "..\SuishouReply-$edgeVersion-Edge-SHA256.txt"
+gh auth status
+gh repo view $repoName --json nameWithOwner,visibility
+git tag -a $edgeTag -m "SuishouReply Edge $edgeTag"
+git push origin $edgeTag
+gh release create $edgeTag $edgeAsset $edgeChecksum --repo $repoName --verify-tag --draft --title "随手回 Edge $edgeTag" --notes-file .\work\release-notes.md
+```
+
+先核对草稿说明与附件，下载并比对 SHA-256，再使用 `gh release edit $edgeTag --repo $repoName --draft=false` 发布。发布后匿名下载附件再次校验，并检查 README、Release 和直接下载链接。原有 v1.0.0 Release 及安装包继续保留，不为本次发版删除旧版本。
+
+用户端升级已加载的扩展时，可在原稳定安装路径替换 `extension` 运行文件，再在 Edge 扩展页重新加载并刷新 X；同时升级桥接 EXE 时按 [安装与升级说明](EDGE_EXTENSION.md#从已有-v120-升级) 完成旧组件卸载与新目录注册。新开关默认关闭，发布文档应明确要求用户主动启用，以及先暂停桌面剪贴板监听。
+
+## 完整桌面版维护模板（v1.1.1）
+
+以下沿用完整 PySide6 桌面程序的构建与发布流程；文件名不带 `Edge`，不能用这些命令替代上方扩展构建。v1.1.1 源码已包含在仓库中，完整桌面二进制公开下载仍以 v1.0.0 Release 为准。
+
 ```powershell
 $repoOwner = 'shui234'
 $repoName = "$repoOwner/suishou-reply"

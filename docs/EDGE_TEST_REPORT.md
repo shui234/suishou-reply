@@ -2,9 +2,17 @@
 
 验证日期：2026-11-11（Asia/Shanghai）。环境：Windows 11 x64、Python 3.14.4、PySide6 6.12.0、PyInstaller 6.22.3、Node.js 24.14.1、Microsoft Edge 156.0.4314.58。
 
-## v1.2.1 自动复制增量验收
+## v1.2.1 GitHub 发布构建验收
 
-本轮完整 Python 回归 **360 项通过**，扩展 Node 回归 **98 项通过**；真实 Edge 156 引擎加载新的构建目录，在合成页面与编译 EXE 模拟回复上完成 **27 项集成检查**。均退出码 0，没有调用付费 API。
+发布包从已提交源码的独立干净工作区重建，排除了原工作目录中尚未提交的桌面增强。**公开源码完整 Python 回归 302 项通过、扩展 Node 回归 98 项通过、最终构建的 Edge 合成集成 27 项通过**，退出码均为 0。构建 EXE 的标准输入输出协议 ping 返回 `ready / 1.2.1`，未读取凭据、未调用模型。安装／原生通道的 v1.2.0 历史验证见下文，未冒充新的用户环境安装验收。
+
+最终记录在开发工作区 `work/artifacts/github-v121-python.xml` 与 `work/artifacts/github-v121-browser-final/edge-browser-test.json`；机器可读摘要随发布包提供。首次集成运行暴露测试工具的启动竞争：Service Worker 调试目标已出现，但 `bridge` 尚未初始化。测试脚本改为等待初始化完成，随后 27 项全部通过；没有为此修改扩展产品代码。
+
+旧本地包中的两个复用模块含尚未提交的翻译／素材路径配置增强，均非 Edge 所需；公开包使用 Git 中的对应模块并重新构建，源码子集与发布提交逐文件对应。原包和原工作目录保留。
+
+## v1.2.1 本地完整工作区验收（历史）
+
+本地完整工作区曾完成 Python 回归 **360 项通过**、扩展 Node 回归 **98 项通过**及 **27 项 Edge 合成集成检查**。360 项包含尚未公开提交的额外桌面增强测试，不能作为公开源码可复现的数量；本次公开发布以首节 302 项为准。均未调用付费 API。
 
 新增覆盖：自动复制默认关闭；页面／弹窗开关持久保存且互不覆盖；启动与连续切换竞争；有效结果只复制一次；会话请求缓存结果可复制；重绘不复制；编辑后需手动复制；切帖、失焦、错误、超长结果不复制；浏览器写入失败保留草稿且不循环重试；切帖、切语气、重生成时清除旧复制提示。
 
@@ -13,6 +21,8 @@
 v1.2.1 独立构建在 `dist-edge-v1.2.1`，v1.2.0 目录和压缩包保留。测试记录在工作区 `work/artifacts/edge-v121-python.xml` 和 `work/artifacts/edge-v121-final-browser/edge-browser-test.json`。首次 Python 命令从外层工作目录运行，产生 20 个 `ModuleNotFoundError: suishou` 收集错误；切换至项目根目录后完整运行 360 项通过，没有为此修改产品代码。
 
 ## v1.2.0 基线记录（历史）
+
+以下 360 项同样来自当时的完整本地工作区，不代表当前公开源码的测试数量。
 
 | 检查 | 结果 | 证据与范围 |
 | --- | --- | --- |
@@ -66,7 +76,7 @@ node extension/tests/browser-smoke.cjs
 node extension/tests/native-ping.cjs
 ```
 
-独立源码子集可运行 `python -m pytest -q tests/test_edge_protocol.py tests/test_edge_bridge.py tests/test_edge_install.py`，以及上述 Node 测试。此子集没有包含桌面全量测试，360 项结果只适用于完整项目。
+独立源码子集可运行 `python -m pytest -q tests/test_edge_protocol.py tests/test_edge_bridge.py tests/test_edge_install.py`（56 项），以及上述 Node 测试。子集不包含桌面全量测试；完整 GitHub 源码当前为 302 项 Python 测试。
 
 ## 仍待完成／未承诺的项目
 
@@ -82,7 +92,7 @@ node extension/tests/native-ping.cjs
 
 发行包采用明确白名单，不把整个脏工作区直接压缩；排除 API Key、用户配置、原创历史、注册备份、已有私人路径说明和临时文件。打包时检查运行文件与当前源码一致、EXE 哈希、版本和 ZIP CRC。此检查不是完整漏洞审计或渗透测试。
 
-本次交付独立桥接 EXE，旧桌面程序和 v1.0.0／v1.1.0／v1.1.1 包继续保留。安装前的源代码快照与差异记录保存在工作目录的 `work/edge-v12-preserve`，不进入发行包。没有进行 Git reset、clean、分支切换或远程推送。
+本次交付独立桥接 EXE，旧桌面程序和 v1.0.0／v1.1.0／v1.1.1／v1.2.0 本地包继续保留；GitHub 的 v1.0.0 Release 也保留。安装前的源代码快照与差异记录保存在工作目录的 `work/edge-v12-preserve`，不进入发行包。发布采用独立工作区与正常快进推送；原工作区没有 reset、clean 或切换分支，也没有提交其尚未完成的改动。
 
 ![实际 Edge 中的模拟流程截图](edge-preview.png)
 
