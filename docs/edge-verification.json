@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-11",
+  "timezone": "Asia/Shanghai",
+  "version": "1.2.0",
+  "python": {
+    "tests": 360,
+    "failures": 0,
+    "errors": 0
+  },
+  "node": {
+    "tests": 74,
+    "failures": 0,
+    "errors": 0
+  },
+  "browser": {
+    "engine": "Edg/156.0.4314.58",
+    "passed": true,
+    "checks": {
+      "mv3_loaded_with_fixed_id": true,
+      "auto_off_no_model": true,
+      "excludes_quote_reply_recommendation": true,
+      "auto_on_natural_once": true,
+      "compiled_host_roundtrip": true,
+      "correct_post_sent": true,
+      "collapse_no_request": true,
+      "rerender_no_request": true,
+      "edited_copy_exact": true,
+      "no_composer_mutation_or_send": true,
+      "dirty_preserved_after_source_update": true,
+      "old_article_not_used_after_navigation": true,
+      "switch_cancels_old_request": true,
+      "latest_post_identity": true,
+      "manual_style": true,
+      "balance_no_auto_retry": true,
+      "auto_setting_persisted": true,
+      "retry_preserves_draft_and_requests": true,
+      "small_viewport_layout": true,
+      "tab_close_cleanup": true,
+      "native_eof_exit": true
+    },
+    "synthetic_page": true,
+    "synthetic_model": true,
+    "focus_emulated": true,
+    "native_transport_injected_for_generation": true,
+    "tested_built_extension": true
+  },
+  "native_ping": {
+    "passed": true,
+    "response": {
+      "reply": {
+        "v": 1,
+        "type": "ready",
+        "id": "edge_native_ping",
+        "version": "1.2.0"
+      },
+      "error": null
+    },
+    "real_native_transport": true,
+    "registration_restored": true
+  },
+  "real_x_tested": false,
+  "real_deepseek_tested": false,
+  "paid_api_calls": 0,
+  "bridge_sha256": "efb34ca08141be12788af200410a0fccd11c0d16cca83f49bb04e3c91ae06aea",
+  "bridge_bytes": 26733379,
+  "preserved_original_files": 158,
+  "original_files_modified": [
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "selected_source_scan": {
+    "files": 56,
+    "secret_or_private_path_findings": 0
+  }
+}

@@ -1,0 +1,18 @@
+'use strict';
+const {test} = require('node:test');
+const assert = require('node:assert/strict');
+const {parsePostUrl,selectCandidate,weightedLength,validateDraft} = require('../src/post.js');
+const url='https://x.com/signal/status/123';
+const own={url,text:'这是当前帖子的正文，与引用内容不同。',author:'@signal',ownTextCount:1};
+test('canonical URL only accepts exact supported detail route',()=>{assert.deepEqual(parsePostUrl(url+'?s=20'),{id:'123',author:'@signal',url});assert.deepEqual(parsePostUrl('https://twitter.com/signal/status/123'),{id:'123',author:'@signal',url});for(const bad of ['https://x.com/home','https://x.com/signal/status/123/photo/1','https://example.com/signal/status/123','http://x.com/signal/status/123','https://user@x.com/signal/status/123','https://x.com/signal/status/123/extra'])assert.equal(parsePostUrl(bad),null);});
+test('selects exact permalink not the first reply or recommendation',()=>{const result=selectCandidate([{...own,url:'https://x.com/other/status/1',author:'@other'},own],url);assert.deepEqual(result.post,{id:'123',url,author:'@signal',text:own.text});});
+test('quoted candidate cannot represent original post',()=>{assert.equal(selectCandidate([{...own,quoted:true}],url).post,null);});
+test('multiple matching articles are ambiguous even when text agrees',()=>{assert.equal(selectCandidate([own,{...own}],url).post,null);});
+test('empty image-only and multiple own body blocks fail closed',()=>{for(const candidate of [{...own,text:''},{...own,ownTextCount:2},{...own,author:'@different'},{...own,text:'x'.repeat(3001)}])assert.equal(selectCandidate([candidate],url).post,null);});
+test('old React article cannot match new route while navigating',()=>{assert.equal(selectCandidate([own],'https://x.com/signal/status/456').post,null);});
+test('control Unicode or hidden text is rejected rather than forwarded',()=>{for(const text of ['safe\u0000unsafe','invisible\u202Etext','bad\ud800'])assert.equal(selectCandidate([{...own,text}],url).post,null);});
+test('draft limit counts Chinese and emoji conservatively without truncating',()=>{assert.equal(weightedLength('中a🧩'),5);assert.equal(validateDraft('中'.repeat(140)).valid,true);const long='中'.repeat(141);assert.equal(validateDraft(long).valid,false);assert.equal(validateDraft(long).length,282);assert.equal(long.length,141);});
+test('draft count conservatively counts full URLs and invalid characters cannot copy',()=>{const text='中 https://example.com/a/long/path';assert.equal(weightedLength(text),text.length+1);assert.equal(validateDraft('安全\u202E内容').valid,false);assert.equal(validateDraft('  ').valid,false);});
+test('short URLs reserve at least 23 weighted characters and cannot slip past Chinese boundary',()=>{const text='中'.repeat(133)+' https://a.co';assert.equal(weightedLength(text),290);assert.equal(validateDraft(text).valid,false);assert.equal(weightedLength('https://a.co'),23);assert.equal(weightedLength('www.a.co'),23);assert.equal(weightedLength('a.co'),23);});
+test('URL trailing punctuation is counted independently in ASCII and Chinese',()=>{assert.equal(weightedLength('https://a.co).'),25);assert.equal(weightedLength('https://a.co。'),25);assert.equal(weightedLength('https://a.co）。'),27);assert.equal(weightedLength('https://a.co补充'),27);});
+test('uncommon Unicode domain does not undercount a potentially shortened URL',()=>{assert.ok(weightedLength('中文.cn')>=23);assert.ok(weightedLength('https://中文.cn')>=23);});
