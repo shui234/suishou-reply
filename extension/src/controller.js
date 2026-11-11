@@ -11,7 +11,7 @@
   class DraftController {
     constructor({send,onChange=()=>{},newId=()=>crypto.randomUUID()}) {
       this.send = send; this.onChange = onChange; this.newId = newId;
-      this.post = null; this.style = '自然'; this.auto = false; this.visible = true;
+      this.post = null; this.style = '自然'; this.auto = false; this.autoCopy = false; this.visible = true;
       this.connected = true; this.disposed = false; this.reason = '';
       this.entries = new Map(); this.attempted = new Map(); this.lastStyles = new Map();
       this.dirtyDrafts = new Map(); this.dirtyStyles = new Map(); this.active = null;
@@ -25,7 +25,7 @@
     }
     get state() {
       const entry = this._entry();
-      return {post:this.post ? {...this.post} : null,style:this.style,auto:this.auto,visible:this.visible,
+      return {post:this.post ? {...this.post} : null,style:this.style,auto:this.auto,autoCopy:this.autoCopy,visible:this.visible,
         connected:this.connected,loading:!!this.active,reason:this.reason,...entry};
     }
     _emit() { if (!this.disposed) this.onChange(this.state); }
@@ -82,6 +82,11 @@
       if(this.post)boundedSet(this.lastStyles,identity(this.post),style);
       this._emit();
     }
+    setAutoCopy(value) {
+      if (this.disposed) return;
+      this.autoCopy = value === true;
+      this._emit();
+    }
     _maybeAuto() {
       if (this.disposed || !this.auto || !this.post || !this.visible || !this.connected || this.active) return;
       if (this._entry().dirty) return;
@@ -124,14 +129,16 @@
     }
     handle(message) {
       if (this.disposed || !message || typeof message !== 'object') return;
-      if (message.type === 'settings') { this.setAuto(message.auto); return; }
+      if (message.type === 'settings') { this.setAutoCopy(message.autoCopy); this.setAuto(message.auto); return; }
       const active = this.active;
       if (!active || message.id !== active.id || active.key !== this._key()) return;
       if (!['result','error','cancelled'].includes(message.type)) return;
       this.active = null;
       const entry = this._entry();
       if (entry.revision !== active.revision) return;
+      let accepted = false;
       if (message.type === 'result' && typeof message.text === 'string' && message.text.trim() && message.text.length <= 500) {
+        accepted = true;
         entry.draft = message.text; entry.dirty = false; entry.error = '';
         entry.usage = message.usage && typeof message.usage === 'object' ? {...message.usage} : {};
         entry.cached = !!message.cached; entry.status = message.cached ? '已复用本次会话草稿，请审阅后使用。' : '已生成，请审阅后使用。';
@@ -143,6 +150,9 @@
         entry.retry={force:active.force,previous:active.previous};
       }
       this._emit();
+      // Only a newly accepted response may produce clipboard side effects.
+      // Rerenders, restored drafts, errors and replayed messages return nothing/false.
+      return accepted;
     }
     disconnect() {
       if (this.disposed) return;

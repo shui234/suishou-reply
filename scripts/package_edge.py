@@ -97,7 +97,7 @@ def main() -> int:
             'Use Windows x64 and Python 3.11-3.15 (verified environment: Python 3.14.4). From this source folder:\n\n'
             '```powershell\npython -m venv .venv\n.\\.venv\\Scripts\\python.exe -m pip install -r requirements-dev.txt\n'
             '.\\.venv\\Scripts\\python.exe scripts\\build_edge.py\n```\n\n'
-            'The build writes only dist-edge-v1.2.0. Install that folder in place and load its extension subfolder in Edge. '
+            f'The build writes only dist-edge-v{VERSION}. Install that folder in place and load its extension subfolder in Edge. '
             'Configure the existing DeepSeek key using the desktop application. The bridge never asks the browser for secrets.\n')
     with zipfile.ZipFile(temporary) as package:
         if package.testzip() is not None:

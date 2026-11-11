@@ -10,7 +10,7 @@ const ROOT=path.resolve(__dirname,'../..'),ID='pibjjmjbipbifeddoahjagcinihkcgnf'
 const EXTENSION=path.resolve(process.env.SUISHOU_TEST_EXTENSION_DIR||path.join(ROOT,'extension'));
 const OUT=path.resolve(process.argv[2]||path.join(os.tmpdir(),'suishou-edge-check-'+Date.now()));
 const EDGE=process.env.SUISHOU_TEST_EDGE||path.join(process.env['ProgramFiles(x86)']||'C:/Program Files (x86)','Microsoft/Edge/Application/msedge.exe');
-const HOST=path.join(ROOT,'dist-edge-v1.2.0/SuishouReplyBridge.exe');
+const HOST=path.join(ROOT,'dist-edge-v1.2.1/SuishouReplyBridge.exe');
 const checks={};let browser,client,native,pageSession,report={mode:'Edge MV3 + intercepted synthetic DOM + compiled --synthetic host',real_x_tested:false,paid_api_calls:0};
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,label,ms=20000){const deadline=Date.now()+ms;let lastError;while(Date.now()<deadline){try{const r=await fn();if(r)return r}catch(e){lastError=e}await delay(60)}throw Error('Timed out: '+label+(lastError?' ('+lastError.message+')':''))}
@@ -63,28 +63,35 @@ async function main(){
  await client.evaluate(`bridge.d.connectNative=()=>{const listeners=[],disconnects=[];const p={onMessage:{addListener:f=>listeners.push(f)},onDisconnect:{addListener:f=>disconnects.push(f)},postMessage:m=>suishouTestPipe(JSON.stringify(m)),disconnect:()=>suishouTestPipe(JSON.stringify({type:'__disconnect'})),emit:m=>listeners.forEach(f=>f(m))};globalThis.__nativeTestPort=p;return p;}`,worker);
  async function shadow(){const doc=await client.call('DOM.getDocument',{depth:-1,pierce:true},page);const host=descendants(doc.root).find(n=>n.attributes?.includes('suishou-reply-extension'));if(!host?.shadowRoots?.[0])return null;return (await client.call('DOM.resolveNode',{backendNodeId:host.shadowRoots[0].backendNodeId},page)).object.objectId}
  async function panel(fn,args=[]){const objectId=await until(shadow,'closed panel shadow root');const r=await client.call('Runtime.callFunctionOn',{objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true},page);if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value}
- async function state(){const s=await panel('function(){return {source:this.querySelector(".source").textContent,draft:this.querySelector("textarea").value,status:this.querySelector(".state").textContent,auto:this.querySelector("input[type=checkbox]").checked,toast:this.querySelector(".toast").textContent}}');report.last_panel=s;return s;}
+ async function state(){const s=await panel('function(){return {source:this.querySelector(".source").textContent,draft:this.querySelector("textarea").value,status:this.querySelector(".state").textContent,auto:this.querySelectorAll("input[type=checkbox]")[0].checked,autoCopy:this.querySelectorAll("input[type=checkbox]")[1].checked,toast:this.querySelector(".toast").textContent}}');report.last_panel=s;return s;}
  async function click(label){return panel('function(label){const b=Array.from(this.querySelectorAll("button")).find(b=>b.textContent===label);if(!b||b.disabled)throw Error("button missing/disabled "+label);b.click()}',[label])}
  await until(async()=>{const s=await state();report.last_panel=s;return s.source.includes('AI 工具越来越多')},'post extraction');await delay(300);
  checks.auto_off_no_model=requests.length===0;assert.equal(checks.auto_off_no_model,true);
  const first=await state();checks.excludes_quote_reply_recommendation=!/引用内容|推荐帖，|一条评论/.test(first.source);assert.equal(checks.excludes_quote_reply_recommendation,true);
  report.tabs=await client.evaluate('Promise.all(Array.from(bridge.ports.values(),p=>chrome.tabs.get(p.tabId))).then(ts=>ts.map(t=>({id:t.id,active:t.active,url:t.url})))',worker);
+ // Capture clipboard writes only in the isolated test world, never the user's clipboard.
+ const worlds=[];client.listeners.push(m=>{if(m.method==='Runtime.executionContextCreated'&&m.sessionId===page)worlds.push(m.params.context)});
+ await client.call('Runtime.disable',{},page);await client.call('Runtime.enable',{},page);
+ const contentWorld=await until(async()=>worlds.find(w=>w.name===`chrome-extension://${ID}`||w.origin===`chrome-extension://${ID}`||w.name.includes(ID)),'extension isolated world');
+ await client.call('Runtime.evaluate',{expression:'globalThis.__copiedTest="";globalThis.__copyCount=0;Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async value=>{globalThis.__copiedTest=value;globalThis.__copyCount++}}});',contextId:contentWorld.id},page);
+ async function clipboard(){const r=await client.call('Runtime.evaluate',{expression:'({text:globalThis.__copiedTest,count:globalThis.__copyCount})',contextId:contentWorld.id,returnByValue:true},page);return r.result.value;}
+ assert.equal((await state()).autoCopy,false);assert.equal((await clipboard()).count,0);checks.auto_copy_default_off=true;
+ await panel('function(){const toggle=this.querySelectorAll("input[type=checkbox]")[1];toggle.checked=true;toggle.dispatchEvent(new Event("change",{bubbles:true}))}');
+ await until(async()=>(await state()).autoCopy===true,'auto copy preference saved');assert.equal(await client.evaluate('chrome.storage.local.get("autoCopy").then(v=>v.autoCopy)',worker),true);assert.equal(requests.length,0);checks.auto_copy_persisted_without_generation=true;
  await client.evaluate("chrome.storage.local.set({autoGenerate:true})",worker);
  await until(async()=>{const s=await state();return s.draft||s.status.includes('本机')},'automatic native reply');
  report.runtime_probe=await client.evaluate('({binding:typeof suishouTestPipe,timerError:globalThis.__timerError,native:!!globalThis.__nativeTestPort})',worker);
  assert.match((await state()).draft,/工具多不代表效率高/);
  checks.auto_on_natural_once=requests.length===1&&requests[0].style==='自然';assert.equal(checks.auto_on_natural_once,true);
  checks.compiled_host_roundtrip=true;checks.correct_post_sent=requests[0].post.id==='123'&&!requests[0].post.text.includes('引用内容');assert.equal(checks.correct_post_sent,true);
+ await until(async()=>(await state()).toast.includes('已自动复制'),'automatic copy feedback');assert.equal((await clipboard()).text,(await state()).draft);assert.equal((await clipboard()).count,1);checks.accepted_reply_auto_copied=true;
  const generatedShot=await client.call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},page);await fs.writeFile(path.join(OUT,'edge-fixture-generated.png'),Buffer.from(generatedShot.data,'base64'));
  await panel('function(){this.querySelector(".collapse").click();this.querySelector(".mini").click()}');await delay(200);assert.equal(requests.length,1);checks.collapse_no_request=true;
  await client.evaluate('document.querySelector("#current-post").append(document.createTextNode(" "))',page);await delay(500);assert.equal(requests.length,1);checks.rerender_no_request=true;
+ assert.equal((await clipboard()).count,1);checks.rerender_no_clipboard_write=true;
  await client.evaluate('document.querySelector("#native-send").onclick=()=>{window.__sent=true};',page);
- // The actual content-script isolated world owns navigator.clipboard. Replace it only in the test world.
- const worlds=[];client.listeners.push(m=>{if(m.method==='Runtime.executionContextCreated'&&m.sessionId===page)worlds.push(m.params.context)});
- await client.call('Runtime.disable',{},page);await client.call('Runtime.enable',{},page);
- const contentWorld=await until(async()=>worlds.find(w=>w.name===`chrome-extension://${ID}`||w.origin===`chrome-extension://${ID}`||w.name.includes(ID)),'extension isolated world');
- await client.call('Runtime.evaluate',{expression:'globalThis.__copiedTest="";Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async value=>{globalThis.__copiedTest=value}}});',contextId:contentWorld.id},page);
  await panel('function(){const e=this.querySelector("textarea");e.value="先把实际需求说清楚，工具才能帮忙减少重复劳动。";e.dispatchEvent(new Event("input",{bubbles:true}))}');
+ assert.equal((await clipboard()).count,1);checks.edit_does_not_overwrite_clipboard=true;
  await click('手动填充');
  const copied=await client.call('Runtime.evaluate',{expression:'globalThis.__copiedTest',contextId:contentWorld.id,returnByValue:true},page);
  assert.equal(copied.result.value,'先把实际需求说清楚，工具才能帮忙减少重复劳动。');checks.edited_copy_exact=true;
@@ -103,9 +110,12 @@ async function main(){
  hold=true;await click('重新生成');await until(()=>requests.length===5,'forced request');const errorId=requests.at(-1).id;await deliver({v:1,type:'error',id:errorId,code:'balance',message:'DeepSeek 账户余额不足，请充值后重试。'});await until(async()=>(await state()).status.includes('余额'),'balance feedback');await delay(350);assert.equal(requests.length,5);checks.balance_no_auto_retry=true;hold=false;queued.length=0;
  const shot=await client.call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},page);await fs.writeFile(path.join(OUT,'edge-fixture-panel.png'),Buffer.from(shot.data,'base64'));
  await client.evaluate('chrome.storage.local.set({autoGenerate:false})',worker);await until(async()=>(await state()).auto===false,'switch off persisted');assert.equal(await client.evaluate('chrome.storage.local.get("autoGenerate").then(v=>v.autoGenerate)',worker),false);checks.auto_setting_persisted=true;
+ await panel('function(){const toggle=this.querySelectorAll("input[type=checkbox]")[1];toggle.checked=false;toggle.dispatchEvent(new Event("change",{bubbles:true}))}');
+ await until(async()=>(await state()).autoCopy===false,'auto copy disabled');const beforeRetry=(await clipboard()).count;
  // Fresh success then cached reuse from the worker, without a model call.
  await click('重试');await until(()=>requests.length===6,'manual retry');await until(async()=>(await state()).draft.length>0&&!(await state()).status.includes('余额'),'retry success');
  checks.retry_preserves_draft_and_requests=true;
+ assert.equal((await clipboard()).count,beforeRetry);checks.auto_copy_off_preserves_clipboard=true;
  await client.call('Emulation.setDeviceMetricsOverride',{width:800,height:600,deviceScaleFactor:1,mobile:false},page);await delay(250);
  const bounds=await client.evaluate('(()=>{const r=document.querySelector("#suishou-reply-extension").getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}})()',page);assert.ok(bounds.left>=0&&bounds.right<=800&&bounds.top>=0&&bounds.bottom<=600);checks.small_viewport_layout=true;
  const smallShot=await client.call('Page.captureScreenshot',{format:'png'},page);await fs.writeFile(path.join(OUT,'edge-fixture-small.png'),Buffer.from(smallShot.data,'base64'));

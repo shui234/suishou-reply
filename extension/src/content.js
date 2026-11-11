@@ -6,13 +6,15 @@
   const {post:postTools,DraftController,createPanel}=globalThis.Suishou;
   let port=null,core=null,manual=null,disposed=false,suspended=false,timer=null,interval=null;
   let portRoute=null,disconnectedRoute=null,settingsReady=false,pendingAuto=null;
+  let copySettingsReady=false,pendingCopy=null,copySequence=0,feedbackIdentity=null,feedbackRevision=0;
   const foreground=()=>document.visibilityState==='visible' && document.hasFocus();
   const panel=createPanel({
     onAuto:enabled=>{pendingAuto=enabled;if(!enabled)core.setAuto(false);if(!ensureConnection())return;try{port.postMessage({type:'set-auto',enabled});}catch{core.disconnect();}},
+    onAutoCopy:enabled=>{pendingCopy=enabled;copySettingsReady=false;if(!enabled)core.setAutoCopy(false);if(!ensureConnection())return;try{port.postMessage({type:'set-auto-copy',enabled});}catch{core.setAutoCopy(false);core.disconnect();}},
     onStyle:style=>core.setStyle(style),
     onGenerate:()=>{if(!ensureConnection())return;scan(false);core.generate();},
     onRegenerate:()=>{if(!ensureConnection())return;scan(false);core.generate(true);},
-    onEdit:text=>core.editDraft(text),
+    onEdit:text=>{panel.feedback('');core.editDraft(text);},
     onCopy:()=>copyDraft(false),
     onManualFill:()=>copyDraft(true),
     onManualSource:text=>{
@@ -23,10 +25,14 @@
       panel.feedback('已使用你提供的原文，请确认与当前帖子一致。');
     },
   });
-  core=new DraftController({send:message=>{if(!port)throw new Error('Disconnected');port.postMessage(message);},onChange:state=>panel.render(state)});
+  core=new DraftController({send:message=>{if(!port)throw new Error('Disconnected');port.postMessage(message);},onChange:state=>{
+    const identity=JSON.stringify([state.post?.url,state.post?.text,state.style,state.draft,state.revision,state.loading]);
+    if(identity!==feedbackIdentity){panel.feedback('');feedbackIdentity=identity;feedbackRevision++;}
+    panel.render(state);
+  }});
   core.setVisible(foreground());
   function connectPort() {
-    settingsReady=false;
+    settingsReady=false;copySettingsReady=false;
     try {
       const connection=chrome.runtime.connect({name:'suishou-page'});port=connection;
       portRoute=postTools.parsePostUrl(location.href)?.url || null;
@@ -36,16 +42,24 @@
           pendingAuto=false;settingsReady=false;core.setAuto(false);
           panel.feedback('开关状态未能保存，本页自动生成已暂停；请重新操作开关。');return;
         }
+        if(message.type==='error' && message.id==='copy-settings') {
+          pendingCopy=false;copySettingsReady=false;core.setAutoCopy(false);
+          panel.feedback('自动复制开关未能保存，本页已关闭自动复制；请重新操作开关。');return;
+        }
         if(message.type==='settings') {
           scan(false);
-          if(typeof message.auto!=='boolean' || pendingAuto!==null && message.auto!==pendingAuto)return;
-          pendingAuto=null;settingsReady=true;
+          const acceptAuto=typeof message.auto==='boolean' && (pendingAuto===null || message.auto===pendingAuto);
+          const autoCopy=message.autoCopy===true;
+          const acceptCopy=pendingCopy===null || autoCopy===pendingCopy;
+          if(acceptAuto){pendingAuto=null;settingsReady=true;}
+          if(acceptCopy){pendingCopy=null;copySettingsReady=true;}
+          core.handle({...message,auto:acceptAuto?message.auto:core.state.auto,autoCopy:acceptCopy?autoCopy:core.state.autoCopy});return;
         } else scan();
-        core.handle(message);
+        if(core.handle(message))void copyDraft(false,true);
       });
       connection.onDisconnect.addListener(()=>{
         void chrome.runtime.lastError;if(connection!==port)return;
-        disconnectedRoute=portRoute;settingsReady=false;port=null;core.disconnect();
+        disconnectedRoute=portRoute;settingsReady=false;copySettingsReady=false;port=null;core.disconnect();
       });
       core.reconnect();return true;
     } catch {port=null;disconnectedRoute=postTools.parsePostUrl(location.href)?.url || null;core.disconnect();return false;}
@@ -74,15 +88,27 @@
     if(disposed||suspended||timer!==null)return;
     timer=setTimeout(()=>{timer=null;scan();},160);
   }
-  async function copyDraft(manualFill) {
-    scan();const draft=core.state.draft;
+  async function copyDraft(manualFill,automatic=false) {
+    scan(false);const current=core.state,draft=current.draft;
+    if(automatic && (!copySettingsReady || !current.autoCopy || current.dirty || !foreground() || disposed || suspended))return;
     if(!core.state.post || !draft.trim()){panel.feedback('请先确认当前帖子并生成或编辑草稿。');return;}
     const checked=postTools.validateDraft(draft);
     if(!checked.valid){panel.feedback(checked.message);return;}
+    const sequence=++copySequence,revision=feedbackRevision;
+    const stillCurrent=()=>{
+      const latest=core.state;
+      return !disposed && !suspended && sequence===copySequence && revision===feedbackRevision && foreground()
+        && postTools.parsePostUrl(location.href)?.url===current.post.url
+        && latest.post?.url===current.post.url && latest.post?.text===current.post.text
+        && latest.style===current.style && latest.draft===draft && latest.revision===current.revision
+        && (!automatic || latest.autoCopy);
+    };
     try {
       await navigator.clipboard.writeText(draft);
-      panel.feedback(manualFill?'已复制。请自行点击当前帖的 X 回复框，按 Ctrl+V 粘贴，检查后再发送。':'草稿已复制，请核对后手动粘贴发布。');
-    } catch {panel.feedback('浏览器未允许复制；请在上方草稿框中全选并手动复制。');}
+      if(stillCurrent())panel.feedback(automatic?'已自动复制，请在 X 回复框按 Ctrl+V，核对后自行发送。':manualFill?'已复制。请自行点击当前帖的 X 回复框，按 Ctrl+V 粘贴，检查后再发送。':'草稿已复制，请核对后手动粘贴发布。');
+    } catch {
+      if(stillCurrent())panel.feedback(automatic?'自动复制未成功，请点击“复制草稿”重试。':'浏览器未允许复制；请在上方草稿框中全选并手动复制。');
+    }
   }
   const observer=new MutationObserver(schedule);
   // X uses same-document navigation. A low-frequency route check needs no history monkey patch.

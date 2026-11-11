@@ -42,9 +42,10 @@
   }
   class BridgeWorker {
     constructor(deps) {
-      this.d=deps;this.ports=new Map();this.cache=new Map();this.native=null;this.active=null;this.auto=false;this.dead=false;this.persist=Promise.resolve();this.preferenceWrites=Promise.resolve();this.preferenceRevision=0;
-      this.ready=Promise.all([deps.local.get('autoGenerate'),deps.session.get('replyCache')]).then(([settings,session])=>{
+      this.d=deps;this.ports=new Map();this.cache=new Map();this.native=null;this.active=null;this.auto=false;this.autoCopy=false;this.dead=false;this.persist=Promise.resolve();this.preferenceWrites=Promise.resolve();this.preferenceRevision=0;this.copyPreferenceRevision=0;
+      this.ready=Promise.all([deps.local.get(['autoGenerate','autoCopy']),deps.session.get('replyCache')]).then(([settings,session])=>{
         this.auto=settings.autoGenerate===true;
+        this.autoCopy=settings.autoCopy===true;
         for(const pair of Array.isArray(session.replyCache)?session.replyCache.slice(-64):[])if(Array.isArray(pair)&&/^[a-f0-9]{64}$/.test(pair[0])&&ownObject(pair[1])&&safeResult(pair[1].text))this.cache.set(pair[0],{text:pair[1].text,usage:usage(pair[1].usage)});
       }).catch(()=>{});
     }
@@ -55,7 +56,7 @@
       this.ports.set(port,{revision:0,tabId:port.sender.tab.id,windowId:port.sender.tab.windowId});
       port.onMessage.addListener(m=>{this.handle(port,m).catch(()=>this.error(port,m?.id,'本机连接未能完成，请重试。','connection'));});
       port.onDisconnect.addListener(()=>this.detach(port));
-      this.ready.then(()=>this.send(port,{type:'settings',auto:this.auto}));return true;
+      this.ready.then(()=>this.send(port,{type:'settings',auto:this.auto,autoCopy:this.autoCopy}));return true;
     }
     async context(port,p) {
       const s=this.ports.get(port);if(!s)return false;
@@ -66,16 +67,30 @@
       await this.ready;
       if(revision!==this.preferenceRevision)return;
       this.auto=enabled===true;
-      for(const p of this.ports.keys())this.send(p,{type:'settings',auto:this.auto});
+      this.broadcastSettings();
+    }
+    async copySettingsChanged(enabled) {
+      const revision=++this.copyPreferenceRevision;
+      await this.ready;
+      if(revision!==this.copyPreferenceRevision)return;
+      this.autoCopy=enabled===true;
+      this.broadcastSettings();
+    }
+    broadcastSettings() {
+      for(const p of this.ports.keys())this.send(p,{type:'settings',auto:this.auto,autoCopy:this.autoCopy});
     }
     async handle(port,m) {
       if(!this.ports.has(port)||!ownObject(m))return;
-      if(m.type==='set-auto') {
+      if(m.type==='set-auto' || m.type==='set-auto-copy') {
         if(!keys(m,['type','enabled'])||typeof m.enabled!=='boolean')return;
+        const copying=m.type==='set-auto-copy',key=copying?'autoCopy':'autoGenerate';
         this.preferenceWrites=this.preferenceWrites.then(async()=>{
           await this.ready;
-          try{await this.d.local.set({autoGenerate:m.enabled});const latest=await this.d.local.get('autoGenerate');await this.settingsChanged(latest.autoGenerate);}
-          catch{this.error(port,'settings','无法保存开关状态，请重试。','storage');}
+          try{
+            await this.d.local.set({[key]:m.enabled});const latest=await this.d.local.get(key);
+            if(copying)await this.copySettingsChanged(latest[key]);else await this.settingsChanged(latest[key]);
+          }
+          catch{this.error(port,copying?'copy-settings':'settings','无法保存开关状态，请重试。','storage');}
         });
         await this.preferenceWrites;
         return;

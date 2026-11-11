@@ -7,9 +7,9 @@ const ID='pibjjmjbipbifeddoahjagcinihkcgnf';
 const post=(id='123')=>({id,url:`https://x.com/tester/status/${id}`,author:'@tester',text:'AI 工具越多，越需要先想清楚具体的问题。'});
 function event(){const listeners=[];return {addListener(fn){listeners.push(fn)},fire(...args){for(const fn of listeners)fn(...args)}};}
 function storage(seed={}){const data={...seed};return {async get(){return {...data}},async set(value){Object.assign(data,value)},data};}
-function harness(){
+function harness(seed={}){
  const native=[];const tabs=new Map([[1,{id:1,active:true,url:post().url}]]);
- const local=storage(), session=storage();
+ const local=storage(seed), session=storage();
  const worker=new BridgeWorker({extensionId:ID,crypto:webcrypto,local,session,getTab:async id=>tabs.get(id),getWindow:async()=>({focused:true}),
   connectNative:()=>{const p={onMessage:event(),onDisconnect:event(),sent:[],postMessage(m){this.sent.push(m)},disconnect(){this.closed=true}};native.push(p);return p;},
   setTimeout,clearTimeout,timeoutMs:1000});
@@ -31,7 +31,7 @@ test('request validator bounds inputs and rejects extra fields and identity mism
  for(const bad of [{endpoint:'https://evil.test'},{key:'secret'},{post:{...post(),id:'999'}},{post:{...post(),author:['@tester']}},{style:'热点'},{force:'yes'},{previous:'a'.repeat(501)},{post:{...post(),text:'a'.repeat(3001)}}]) assert.throws(()=>validateGenerate({...generate(),...bad}));
 });
 test('attach has automatic mode off and does not start native or model',async()=>{
- const h=harness();try{const p=h.port();await h.flush();assert.deepEqual(p.sent[0],{type:'settings',auto:false});assert.equal(h.native.length,0)}finally{h.close()}
+ const h=harness();try{const p=h.port();await h.flush();assert.deepEqual(p.sent[0],{type:'settings',auto:false,autoCopy:false});assert.equal(h.native.length,0)}finally{h.close()}
 });
 test('automatic opt-in persists and is broadcast to already-open pages',async()=>{
  const h=harness();try{const a=h.port(),b=h.port();await h.flush();a.onMessage.fire({type:'set-auto',enabled:true});await h.flush();assert.equal(h.local.data.autoGenerate,true);assert.equal(a.sent.at(-1).auto,true);assert.equal(b.sent.at(-1).auto,true);assert.equal(h.native.length,0)}finally{h.close()}
@@ -86,4 +86,32 @@ test('rapid preference changes are serialized and final off state wins',async()=
 });
 test('cancelled worker suspension still accepts next explicit request',async()=>{
  const h=harness();try{const p=h.port();await h.flush();p.onMessage.fire(generate());await h.flush();h.worker.suspend();assert.equal(h.native[0].closed,true);assert.equal(h.worker.dead,false);p.onMessage.fire(generate('r2'));await h.flush();assert.equal(h.native.length,2);assert.equal(h.native[1].sent[0].type,'generate');const another=h.port();await h.flush();assert.equal(another.closed,undefined)}finally{h.close()}
+});
+
+test('copy opt-in loads independently from generation and starts no native work',async()=>{
+ const h=harness({autoCopy:true});try{const p=h.port();await h.flush();assert.deepEqual(p.sent[0],{type:'settings',auto:false,autoCopy:true});assert.equal(h.native.length,0)}finally{h.close()}
+});
+test('copy opt-in persists and broadcasts without changing automatic generation',async()=>{
+ const h=harness({autoGenerate:true});try{const a=h.port(),b=h.port();await h.flush();a.onMessage.fire({type:'set-auto-copy',enabled:true});await h.worker.preferenceWrites;assert.equal(h.local.data.autoCopy,true);assert.equal(h.local.data.autoGenerate,true);assert.deepEqual(a.sent.at(-1),{type:'settings',auto:true,autoCopy:true});assert.deepEqual(b.sent.at(-1),a.sent.at(-1));assert.equal(h.native.length,0)}finally{h.close()}
+});
+test('copy setting rejects unexpected fields and non-boolean values',async()=>{
+ const h=harness();try{const p=h.port();await h.flush();for(const message of [{type:'set-auto-copy',enabled:'true'},{type:'set-auto-copy',enabled:true,extra:true}])p.onMessage.fire(message);await h.flush();assert.equal(h.local.data.autoCopy,undefined);assert.equal(h.worker.autoCopy,false);assert.equal(h.native.length,0)}finally{h.close()}
+});
+test('copy storage failures use their own error identity and preserve generation setting',async()=>{
+ const h=harness({autoGenerate:true});try{const p=h.port();await h.flush();h.local.set=async()=>{throw Error('unavailable')};p.onMessage.fire({type:'set-auto-copy',enabled:true});await h.worker.preferenceWrites;assert.equal(p.sent.at(-1).id,'copy-settings');assert.equal(p.sent.at(-1).code,'storage');assert.equal(h.worker.auto,true);assert.equal(h.worker.autoCopy,false)}finally{h.close()}
+});
+test('interleaved preference writes serialize independently and final copy off wins',async()=>{
+ const h=harness();try{const p=h.port();await h.flush();const write=h.local.set;h.local.set=async v=>{await new Promise(r=>setTimeout(r,v.autoCopy?15:1));await write(v)};p.onMessage.fire({type:'set-auto-copy',enabled:true});p.onMessage.fire({type:'set-auto',enabled:true});p.onMessage.fire({type:'set-auto-copy',enabled:false});await h.worker.preferenceWrites;assert.equal(h.local.data.autoGenerate,true);assert.equal(h.local.data.autoCopy,false);assert.deepEqual(p.sent.at(-1),{type:'settings',auto:true,autoCopy:false});assert.equal(h.native.length,0)}finally{h.close()}
+});
+test('toolbar copy preference changes broadcast alongside automatic generation',async()=>{
+ const h=harness();try{const p=h.port();await h.flush();await Promise.all([h.worker.settingsChanged(true),h.worker.copySettingsChanged(true)]);assert.deepEqual(p.sent.at(-1),{type:'settings',auto:true,autoCopy:true});await h.worker.copySettingsChanged(false);assert.deepEqual(p.sent.at(-1),{type:'settings',auto:true,autoCopy:false})}finally{h.close()}
+});
+test('delayed startup cannot restore stale copy state or discard a different preference update',async()=>{
+ let finish;
+ const worker=new BridgeWorker({local:{get:()=>new Promise(resolve=>{finish=resolve})},session:storage()});
+ try{
+  const pending=[worker.settingsChanged(true),worker.copySettingsChanged(true),worker.copySettingsChanged(false)];
+  finish({autoGenerate:false,autoCopy:true});await Promise.all(pending);
+  assert.equal(worker.auto,true);assert.equal(worker.autoCopy,false);
+ }finally{worker.dispose()}
 });

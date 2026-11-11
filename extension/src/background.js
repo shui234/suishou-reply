@@ -17,4 +17,8 @@ chrome.tabs.onActivated.addListener(info=>bridge.activated(info.tabId));
 chrome.tabs.onRemoved.addListener(id=>bridge.removed(id));
 chrome.windows.onFocusChanged.addListener(id=>bridge.focused(id));
 chrome.runtime.onSuspend.addListener(()=>bridge.suspend());
-chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&changes.autoGenerate)bridge.settingsChanged(changes.autoGenerate.newValue)});
+chrome.storage.onChanged.addListener((changes,area)=>{
+  if(area!=='local')return;
+  if(changes.autoGenerate)bridge.settingsChanged(changes.autoGenerate.newValue);
+  if(changes.autoCopy)bridge.copySettingsChanged(changes.autoCopy.newValue);
+});

@@ -1,6 +1,6 @@
 # 随手回 | SuishouReply
 
-**V1.2 Edge 扩展已加入本地项目。** 在前台 X 帖子详情页提供草稿面板与默认关闭的「自动生成自然回复」开关，复用原桌面 DeepSeek 配置；用户审阅后复制、手动粘贴并发送。扩展不自动写入 X 输入框，具体平台规则和人工替代见 [安装与使用](docs/EDGE_EXTENSION.md)、[扩展测试报告](docs/EDGE_TEST_REPORT.md)。本地包：`SuishouReply-1.2.0-Edge-Windows.zip`；尚未发布到 GitHub Releases。以下原桌面说明继续保留。
+**V1.2.1 Edge 扩展已加入本地项目。** 在前台 X 帖子详情页提供草稿面板、默认关闭的「自动生成自然回复」和「生成后自动复制」开关，复用原桌面 DeepSeek 配置。两个开关都开启后：打开帖子 → 生成并复制 → 审阅 → 自行 Ctrl+V 粘贴并发送。编辑后需再点「复制草稿」，使用前请暂停桌面版剪贴板监听。扩展不自动写入 X 输入框，详见 [安装与使用](docs/EDGE_EXTENSION.md)、[扩展测试报告](docs/EDGE_TEST_REPORT.md)。本地包：`SuishouReply-1.2.1-Edge-Windows.zip`；尚未发布到 GitHub Releases，旧 v1.2.0 包继续保留。以下原桌面说明继续保留。
 
 **推文回复，随手来一句；原创内容，点一下来一条。**
 

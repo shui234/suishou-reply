@@ -3,6 +3,8 @@
 <p>打开 X 帖子详情页，在页面旁的随手回面板生成和编辑草稿。</p>
 <label class="toggle"><input id="auto" type="checkbox"> 自动生成自然回复</label>
 <p class="note">开启后，前台当前帖子的正文将发送给 DeepSeek，可能产生 API 费用。只生成草稿，不填入或发送。</p>
+<label class="toggle"><input id="auto-copy" type="checkbox"> 生成后自动复制</label>
+<p class="note">默认关闭。开启后，当前帖子的新草稿将替换剪贴板内容。请暂停桌面版剪贴板监听，避免额外请求；编辑后需手动再复制。</p>
 <p id="status" role="status"></p>
 <ol><li>先解压完整安装包，运行 <b>Install.cmd</b>。</li><li>在原随手回桌面应用中保存 DeepSeek 密钥。</li><li>审阅草稿后复制，手动粘贴进 X 回复框。</li></ol>
 <p class="note">密钥保留在 Windows 凭据管理器。网页识别不确定时，可在面板粘贴原帖。扩展不读取其他网站。</p>

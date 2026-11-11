@@ -21,7 +21,7 @@ function call(method,params={},sessionId){return new Promise((resolve,reject)=>{
  const answer=await call('Runtime.evaluate',{expression:'new Promise(resolve=>chrome.runtime.sendNativeMessage("com.suishou.reply",{v:1,type:"ping",id:"edge_native_ping"},reply=>resolve({reply,error:chrome.runtime.lastError?.message||null})))',awaitPromise:true,returnByValue:true},sessionId);
  if(answer.exceptionDetails)throw Error(answer.exceptionDetails.text);
  result.response=answer.result.value;
- result.passed=result.response?.reply?.type==='ready'&&result.response.reply.version==='1.2.0'&&!result.response.error;
+ result.passed=result.response?.reply?.type==='ready'&&result.response.reply.version==='1.2.1'&&!result.response.error;
  if(!result.passed)process.exitCode=1;
  }catch(e){result.passed=false;result.error=e.message;process.exitCode=1}finally{
  try{await call('Browser.close')}catch{};for(const p of pending.values())clearTimeout(p.timer);pending.clear();try{ws?.close()}catch{};

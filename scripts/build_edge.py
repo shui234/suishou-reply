@@ -19,7 +19,7 @@ ROOT = SCRIPTS.parent
 sys.path.insert(0, str(SCRIPTS))
 from build import build_environment, collect_notices
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 EXTENSION_ID = 'pibjjmjbipbifeddoahjagcinihkcgnf'
 HOST_NAME = 'com.suishou.reply'
 EXE_NAME = 'SuishouReplyBridge.exe'
@@ -54,15 +54,15 @@ def extension_files(root: Path = ROOT) -> list[Path]:
 
 def write_version_info(path: Path) -> None:
     path.write_text("""VSVersionInfo(
- ffi=FixedFileInfo(filevers=(1,2,0,0), prodvers=(1,2,0,0), mask=0x3f,
+ ffi=FixedFileInfo(filevers=(1,2,1,0), prodvers=(1,2,1,0), mask=0x3f,
   flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0,0)),
  kids=[StringFileInfo([StringTable('040904B0', [
   StringStruct('FileDescription', 'SuishouReply Edge Native Messaging Bridge'),
-  StringStruct('FileVersion', '1.2.0'),
+  StringStruct('FileVersion', '1.2.1'),
   StringStruct('InternalName', 'SuishouReplyBridge'),
   StringStruct('OriginalFilename', 'SuishouReplyBridge.exe'),
   StringStruct('ProductName', 'SuishouReply Edge'),
-  StringStruct('ProductVersion', '1.2.0')
+  StringStruct('ProductVersion', '1.2.1')
  ])]), VarFileInfo([VarStruct('Translation', [1033,1200])])]
 )
 """, encoding='utf-8')
@@ -84,7 +84,7 @@ def main() -> int:
     if not (ROOT / 'edge_host.py').is_file():
         parser.error('Native host entry point is missing.')
 
-    build = ROOT / 'build' / 'edge-v1.2.0'
+    build = ROOT / 'build' / f'edge-v{VERSION}'
     build.mkdir(parents=True, exist_ok=True)
     dist.mkdir(parents=True, exist_ok=True)
     version = build / 'version_info.txt'

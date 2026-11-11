@@ -6,7 +6,7 @@ import re
 import struct
 import unicodedata
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 HOST_NAME = 'com.suishou.reply'
 EXTENSION_ID = 'pibjjmjbipbifeddoahjagcinihkcgnf'
 TRUSTED_ORIGIN = f'chrome-extension://{EXTENSION_ID}/'

@@ -1,6 +1,6 @@
 {
   "name": "suishou-reply-edge",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Dependency-free MV3 extension and offline regression tests",
   "scripts": {"test": "node --test tests/*.test.js"},

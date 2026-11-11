@@ -60,7 +60,7 @@ def setup_bridge(qapp):
 def test_ping_no_credentials_and_generate_reuses_original_client(qapp):
     bridge, client, credentials, messages, stopped = setup_bridge(qapp)
     bridge.dispatch({'v': 1, 'type': 'ping', 'id': 'ping'})
-    assert messages == [{'v': 1, 'type': 'ready', 'id': 'ping', 'version': '1.2.0'}]
+    assert messages == [{'v': 1, 'type': 'ready', 'id': 'ping', 'version': '1.2.1'}]
     assert credentials.reads == 0
     bridge.dispatch(request())
     assert credentials.reads == 1

@@ -1,14 +1,14 @@
 {
   "date": "2026-11-11",
   "timezone": "Asia/Shanghai",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "python": {
     "tests": 360,
     "failures": 0,
     "errors": 0
   },
   "node": {
-    "tests": 74,
+    "tests": 98,
     "failures": 0,
     "errors": 0
   },
@@ -19,11 +19,16 @@
       "mv3_loaded_with_fixed_id": true,
       "auto_off_no_model": true,
       "excludes_quote_reply_recommendation": true,
+      "auto_copy_default_off": true,
+      "auto_copy_persisted_without_generation": true,
       "auto_on_natural_once": true,
       "compiled_host_roundtrip": true,
       "correct_post_sent": true,
+      "accepted_reply_auto_copied": true,
       "collapse_no_request": true,
       "rerender_no_request": true,
+      "rerender_no_clipboard_write": true,
+      "edit_does_not_overwrite_clipboard": true,
       "edited_copy_exact": true,
       "no_composer_mutation_or_send": true,
       "dirty_preserved_after_source_update": true,
@@ -34,6 +39,7 @@
       "balance_no_auto_retry": true,
       "auto_setting_persisted": true,
       "retry_preserves_draft_and_requests": true,
+      "auto_copy_off_preserves_clipboard": true,
       "small_viewport_layout": true,
       "tab_close_cleanup": true,
       "native_eof_exit": true
@@ -41,35 +47,26 @@
     "synthetic_page": true,
     "synthetic_model": true,
     "focus_emulated": true,
+    "clipboard_mocked": true,
     "native_transport_injected_for_generation": true,
     "tested_built_extension": true
   },
-  "native_ping": {
+  "stdio_ping": {
     "passed": true,
     "response": {
-      "reply": {
-        "v": 1,
-        "type": "ready",
-        "id": "edge_native_ping",
-        "version": "1.2.0"
-      },
-      "error": null
+      "v": 1,
+      "type": "ready",
+      "id": "release_check",
+      "version": "1.2.1"
     },
-    "real_native_transport": true,
-    "registration_restored": true
+    "credential_access": false
   },
   "real_x_tested": false,
   "real_deepseek_tested": false,
+  "real_system_clipboard_tested": false,
+  "user_edge_installation_verified": false,
   "paid_api_calls": 0,
-  "bridge_sha256": "efb34ca08141be12788af200410a0fccd11c0d16cca83f49bb04e3c91ae06aea",
-  "bridge_bytes": 26733379,
-  "preserved_original_files": 158,
-  "original_files_modified": [
-    "README.md",
-    "CHANGELOG.md"
-  ],
-  "selected_source_scan": {
-    "files": 56,
-    "secret_or_private_path_findings": 0
-  }
+  "bridge_sha256": "9c810ba375cac76b3554cb3afffcd7f2a4bcc69ec1f4ec3fe97045bca9c708e4",
+  "bridge_bytes": 26733882,
+  "prior_v120_preserved": true
 }

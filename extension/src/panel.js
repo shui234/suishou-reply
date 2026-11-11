@@ -11,7 +11,7 @@
   function createPanel(actions, document=root.document) {
     const host = document.createElement('div');
     host.id = 'suishou-reply-extension';
-    host.setAttribute('data-suishou-version','1.2.0');
+    host.setAttribute('data-suishou-version','1.2.1');
     host.style.cssText = 'all:initial;position:fixed;left:18px;bottom:20px;z-index:2147483646;display:block;max-width:calc(100vw - 24px);color-scheme:dark;';
     const shadow = host.attachShadow({mode:'closed'});
     const style = document.createElement('style');
@@ -53,6 +53,9 @@
     const toggleLabel=el('label','toggle');const toggle=el('input');toggle.type='checkbox';toggle.addEventListener('change',()=>actions.onAuto(toggle.checked));
     toggleLabel.append(toggle,document.createTextNode('自动生成自然回复'));body.appendChild(toggleLabel);
     body.appendChild(el('p','hint','开启后，主动打开的当前帖文字会发送到 DeepSeek，可能产生 API 费用。不会自动填入或发送。'));
+    const copyToggleLabel=el('label','toggle'),copyToggle=el('input');copyToggle.type='checkbox';copyToggle.addEventListener('change',()=>actions.onAutoCopy(copyToggle.checked));
+    copyToggleLabel.append(copyToggle,document.createTextNode('生成后自动复制'));body.appendChild(copyToggleLabel);
+    body.appendChild(el('p','hint','会替换剪贴板内容。请先暂停桌面版监听；编辑后需再点“复制草稿”。'));
     const identity=el('div','identity'),author=el('span','author','等待帖子'),link=el('a','link','查看原帖');link.target='_blank';link.rel='noopener noreferrer';link.hidden=true;
     identity.append(author,link);body.appendChild(identity);const source=el('div','source','请打开一条 X 帖子。');body.appendChild(source);
     const styleRow=el('div','row');styleRow.appendChild(el('span','label','语气'));const styles=el('div','styles');const styleButtons=new Map();
@@ -101,6 +104,7 @@
         if(current.post && !geometryReady && !userPlaced)autoLayout();
         const checked=root.Suishou.post.validateDraft(current.draft);
         toggle.checked=current.auto;
+        copyToggle.checked=current.autoCopy===true;
         author.textContent=current.post?.author || '等待当前原帖';
         link.hidden=!current.post;
         if(current.post)link.href=current.post.url;else link.removeAttribute('href');
